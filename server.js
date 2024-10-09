@@ -1,7 +1,11 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const path = require('path');
+import express from 'express';
+import cors from 'cors';
+import bodyParser from 'body-parser';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -24,19 +28,39 @@ const questions = [
 
 // API routes
 app.post('/api/sessions', (req, res) => {
-  // ... (existing code)
+  const { sessionId, userId } = req.body;
+  if (!sessions[sessionId]) {
+    sessions[sessionId] = { users: [userId], answers: {} };
+  } else if (!sessions[sessionId].users.includes(userId)) {
+    sessions[sessionId].users.push(userId);
+  }
+  res.json({ sessionId, userId });
 });
 
 app.get('/api/questions', (req, res) => {
-  // ... (existing code)
+  res.json(questions);
 });
 
 app.post('/api/answers', (req, res) => {
-  // ... (existing code)
+  const { sessionId, userId, questionId, answer } = req.body;
+  if (sessions[sessionId]) {
+    if (!sessions[sessionId].answers[questionId]) {
+      sessions[sessionId].answers[questionId] = {};
+    }
+    sessions[sessionId].answers[questionId][userId] = answer;
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Session not found' });
+  }
 });
 
 app.get('/api/results/:sessionId', (req, res) => {
-  // ... (existing code)
+  const { sessionId } = req.params;
+  if (sessions[sessionId]) {
+    res.json(sessions[sessionId].answers);
+  } else {
+    res.status(404).json({ error: 'Session not found' });
+  }
 });
 
 // The "catchall" handler: for any request that doesn't
