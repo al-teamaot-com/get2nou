@@ -1,41 +1,29 @@
 import express from 'express';
-import cors from 'cors';
-import { json } from 'body-parser';
 import pg from 'pg';
-import path from 'path';
+import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-const { Pool } = pg;
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(json());
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-console.log('Initializing database connection...');
-const pool = new Pool({
+const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
   }
 });
 
-pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
-  process.exit(-1);
-});
+app.use(express.json());
+app.use(express.static(join(__dirname, 'dist')));
 
-console.log('Database connection initialized');
-
-// Serve static files from the React app
-app.use(express.static(path.join(__dirname, 'dist')));
-
-// Create or join a session
+// API routes
 app.post('/api/sessions', async (req, res) => {
-  console.log('Received request to create or join session');
   const { sessionId, userId } = req.body;
   try {
     const client = await pool.connect();
@@ -44,7 +32,6 @@ app.post('/api/sessions', async (req, res) => {
       [sessionId, [userId], userId]
     );
     client.release();
-    console.log('Session created or joined successfully');
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Error creating or joining session:', err);
@@ -52,14 +39,11 @@ app.post('/api/sessions', async (req, res) => {
   }
 });
 
-// Get questions
 app.get('/api/questions', async (req, res) => {
-  console.log('Received request for questions');
   try {
     const client = await pool.connect();
     const result = await client.query('SELECT * FROM questions');
     client.release();
-    console.log('Questions retrieved successfully');
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching questions:', err);
@@ -67,9 +51,7 @@ app.get('/api/questions', async (req, res) => {
   }
 });
 
-// Submit an answer
 app.post('/api/answers', async (req, res) => {
-  console.log('Received request to submit answer');
   const { sessionId, userId, questionId, answer } = req.body;
   try {
     const client = await pool.connect();
@@ -78,7 +60,6 @@ app.post('/api/answers', async (req, res) => {
       [sessionId, userId, questionId, answer]
     );
     client.release();
-    console.log('Answer submitted successfully');
     res.json({ success: true });
   } catch (err) {
     console.error('Error submitting answer:', err);
@@ -86,9 +67,7 @@ app.post('/api/answers', async (req, res) => {
   }
 });
 
-// Get results
 app.get('/api/results/:sessionId', async (req, res) => {
-  console.log('Received request for results');
   const { sessionId } = req.params;
   try {
     const client = await pool.connect();
@@ -106,7 +85,6 @@ app.get('/api/results/:sessionId', async (req, res) => {
       return acc;
     }, {});
     
-    console.log('Results retrieved successfully');
     res.json(results);
   } catch (err) {
     console.error('Error fetching results:', err);
@@ -114,10 +92,9 @@ app.get('/api/results/:sessionId', async (req, res) => {
   }
 });
 
-// The "catchall" handler: for any request that doesn't
-// match one above, send back React's index.html file.
+// Serve React app
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  res.sendFile(join(__dirname, 'dist', 'index.html'));
 });
 
 app.listen(port, () => {
