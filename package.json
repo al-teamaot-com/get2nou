@@ -1,13 +1,12 @@
 {
   "name": "get-to-know-you-app",
   "version": "1.0.0",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node server.js",
-    "heroku-postbuild": "npm run build"
+    "start": "node server.js"
   },
   "dependencies": {
     "@octokit/rest": "^21.0.2",
