@@ -1,11 +1,7 @@
-import express from 'express';
-import cors from 'cors';
-import bodyParser from 'body-parser';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -34,7 +30,7 @@ app.post('/api/sessions', (req, res) => {
   } else if (!sessions[sessionId].users.includes(userId)) {
     sessions[sessionId].users.push(userId);
   }
-  res.json({ sessionId, userId });
+  res.json({ sessionId, userId, users: sessions[sessionId].users });
 });
 
 // Get questions
