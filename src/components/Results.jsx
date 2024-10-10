@@ -54,14 +54,14 @@ function Results() {
     fetchData()
   }, [sessionId])
 
-  if (isLoading) return <div>Loading results...</div>
+  if (isLoading) return <div className="loading">Loading results...</div>
   if (error) return (
     <div>
-      <p style={{ color: 'orange' }}>{error}</p>
+      <p className="error">{error}</p>
       {results.length > 0 && <p>Displaying locally saved results:</p>}
     </div>
   )
-  if (results.length === 0) return <div>No results available for this session.</div>
+  if (results.length === 0) return <div className="error">No results available for this session.</div>
 
   return (
     <div>
@@ -69,7 +69,7 @@ function Results() {
       {results.map(({ questionId, answers }) => {
         const question = questions.find(q => q.id === questionId) || { text: `Question ${questionId}` }
         return (
-          <div key={questionId}>
+          <div key={questionId} className="result-item">
             <h3>{question.text}</h3>
             {Object.entries(answers).map(([userId, answer]) => (
               <p key={userId}>{userId}: {answer}</p>
@@ -77,7 +77,11 @@ function Results() {
           </div>
         )
       })}
-      <Link to="/">Back to Home</Link>
+      <div className="navigation">
+        <Link to="/">
+          <button>Back to Home</button>
+        </Link>
+      </div>
     </div>
   )
 }
