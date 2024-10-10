@@ -10,9 +10,12 @@
     "heroku-postbuild": "npm run build"
   },
   "dependencies": {
+    "@octokit/rest": "^21.0.2",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
     "express": "^4.17.1",
+    "qrcode.react": "^3.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.10.0"
