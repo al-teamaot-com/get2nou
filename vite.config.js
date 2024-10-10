@@ -12,5 +12,5 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
   },
-  root: '.', // Set the root directory to the current directory
+  root: '.'
 })
