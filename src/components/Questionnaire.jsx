@@ -1,73 +1,66 @@
-import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { fetchQuestions, submitAnswer, createOrJoinSession } from '../services/api'
-import ShareSession from './ShareSession'
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { fetchQuestions, submitAnswer, createOrJoinSession } from '../services/api';
+import ShareSession from './ShareSession';
 
 function Questionnaire() {
-  const [questions, setQuestions] = useState([])
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-  const [answers, setAnswers] = useState({})
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [showShareOptions, setShowShareOptions] = useState(false)
-  const [isFirstUser, setIsFirstUser] = useState(false)
-  const { sessionId } = useParams()
-  const navigate = useNavigate()
+  const [questions, setQuestions] = useState([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showShareOptions, setShowShareOptions] = useState(false);
+  const [userId, setUserId] = useState('');
+  const { sessionId } = useParams();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const initSession = async () => {
       try {
-        console.log('Initializing session...');
-        const userId = Math.random().toString(36).substring(7)
-        console.log('Generated userId:', userId);
-        const sessionData = await createOrJoinSession(sessionId, userId)
-        console.log('Session data:', sessionData);
-        setIsFirstUser(sessionData.users.length === 1)
-        console.log('Fetching questions...');
-        const fetchedQuestions = await fetchQuestions()
-        console.log('Fetched questions:', fetchedQuestions);
-        setQuestions(fetchedQuestions)
+        const newUserId = Math.random().toString(36).substring(7);
+        setUserId(newUserId);
+        await createOrJoinSession(sessionId, newUserId);
+        const fetchedQuestions = await fetchQuestions();
+        setQuestions(fetchedQuestions);
       } catch (err) {
-        console.error('Error initializing session:', err)
-        setError(`Unable to connect to the server. Please check your internet connection and try again. (Error: ${err.message})`)
+        setError(`Unable to connect to the server. Please check your internet connection and try again. (Error: ${err.message})`);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    initSession()
-  }, [sessionId])
+    initSession();
+  }, [sessionId]);
 
   const handleAnswer = async (answer) => {
-    const currentQuestion = questions[currentQuestionIndex]
-    setAnswers({ ...answers, [currentQuestion.id]: answer })
+    const currentQuestion = questions[currentQuestionIndex];
+    setAnswers({ ...answers, [currentQuestion.id]: answer });
 
     try {
-      await submitAnswer(sessionId, 'user1', currentQuestion.id, answer)
+      await submitAnswer(sessionId, userId, currentQuestion.id, answer);
       if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1)
+        setCurrentQuestionIndex(currentQuestionIndex + 1);
       } else {
-        setShowShareOptions(true)
+        setShowShareOptions(true);
       }
     } catch (err) {
-      console.error('Error submitting answer:', err)
-      setError(`Failed to submit answer. Please check your internet connection and try again. (Error: ${err.message})`)
+      setError(`Failed to submit answer. Please check your internet connection and try again. (Error: ${err.message})`);
     }
-  }
+  };
 
   const handleSubmit = () => {
-    navigate(`/results/${sessionId}`)
-  }
+    navigate(`/results/${sessionId}`);
+  };
 
-  if (isLoading) return <div className="loading">Loading questions...</div>
-  if (error) return <div className="error">{error}</div>
-  if (questions.length === 0) return <div className="error">No questions available. Please try refreshing the page.</div>
+  if (isLoading) return <div className="loading">Loading questions...</div>;
+  if (error) return <div className="error">{error}</div>;
+  if (questions.length === 0) return <div className="error">No questions available. Please try refreshing the page.</div>;
 
   if (showShareOptions) {
-    return <ShareSession sessionId={sessionId} onSubmit={handleSubmit} />
+    return <ShareSession sessionId={sessionId} onSubmit={handleSubmit} />;
   }
 
-  const currentQuestion = questions[currentQuestionIndex]
+  const currentQuestion = questions[currentQuestionIndex];
 
   return (
     <div>
@@ -88,7 +81,7 @@ function Questionnaire() {
         Question {currentQuestionIndex + 1} of {questions.length}
       </p>
     </div>
-  )
+  );
 }
 
-export default Questionnaire
+export default Questionnaire;
