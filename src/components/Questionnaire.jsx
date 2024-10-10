@@ -28,7 +28,7 @@ function Questionnaire() {
         const userId = localStorage.getItem('userId') || Math.random().toString(36).substring(7)
         localStorage.setItem('userId', userId)
         const sessionData = await createOrJoinSession(sessionId, userId)
-        setIsFirstUser(sessionData.isFirstUser)
+        setIsFirstUser(sessionData.users.length === 1)
         const fetchedQuestions = await fetchQuestions()
         setQuestions(fetchedQuestions)
         const savedAnswers = JSON.parse(localStorage.getItem(`answers_${sessionId}`) || '{}')
@@ -45,16 +45,9 @@ function Questionnaire() {
     initSession()
   }, [sessionId])
 
-  const handleAnswer = async (answer) => {
+  const handleAnswer = (answer) => {
     const updatedAnswers = { ...answers, [questions[currentQuestionIndex].id]: answer }
     setAnswers(updatedAnswers)
-
-    try {
-      await submitAnswer(sessionId, localStorage.getItem('userId'), questions[currentQuestionIndex].id, answer)
-    } catch (err) {
-      console.error('Error submitting answer:', err)
-    }
-
     localStorage.setItem(`answers_${sessionId}`, JSON.stringify(updatedAnswers))
   }
 
@@ -70,16 +63,20 @@ function Questionnaire() {
     }
   }
 
-  const handleFinish = () => {
-    if (isFirstUser) {
-      setShowShareOptions(true)
-    } else {
-      handleSubmit()
+  const handleFinish = async () => {
+    try {
+      for (const [questionId, answer] of Object.entries(answers)) {
+        await submitAnswer(sessionId, localStorage.getItem('userId'), parseInt(questionId), answer)
+      }
+      if (isFirstUser) {
+        setShowShareOptions(true)
+      } else {
+        navigate(`/results/${sessionId}`)
+      }
+    } catch (err) {
+      console.error('Error submitting answers:', err)
+      setError('Failed to submit answers. Please try again.')
     }
-  }
-
-  const handleSubmit = () => {
-    navigate(`/results/${sessionId}`)
   }
 
   if (isLoading) return <div className="loading">Loading questions...</div>
@@ -87,7 +84,7 @@ function Questionnaire() {
   if (questions.length === 0) return <div className="error">No questions available.</div>
 
   if (showShareOptions) {
-    return <ShareSession sessionId={sessionId} onSubmit={handleSubmit} />
+    return <ShareSession sessionId={sessionId} onSubmit={() => navigate(`/results/${sessionId}`)} />
   }
 
   const currentQuestion = questions[currentQuestionIndex]
@@ -116,7 +113,7 @@ function Questionnaire() {
       <div className="navigation">
         <button onClick={handlePrevious} disabled={currentQuestionIndex === 0}>Previous</button>
         {!isLastQuestion && <button onClick={handleNext} disabled={!currentAnswer}>Next</button>}
-        {isLastQuestion && <button onClick={handleFinish} disabled={!currentAnswer}>Finish</button>}
+        {isLastQuestion && <button onClick={handleFinish} disabled={Object.keys(answers).length !== questions.length}>Submit</button>}
       </div>
     </div>
   )
