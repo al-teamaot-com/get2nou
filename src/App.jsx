@@ -4,7 +4,7 @@ import Home from './components/Home'
 import Questionnaire from './components/Questionnaire'
 import Results from './components/Results'
 import JoinSession from './components/JoinSession'
-import './App.css'
+import './App.css'  // Make sure this line is present
 
 function App() {
   return (
