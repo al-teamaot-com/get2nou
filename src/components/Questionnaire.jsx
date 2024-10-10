@@ -56,15 +56,17 @@ function Questionnaire() {
     }
 
     localStorage.setItem(`answers_${sessionId}`, JSON.stringify(updatedAnswers))
-
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1)
-    }
   }
 
   const handlePrevious = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1)
+    }
+  }
+
+  const handleNext = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1)
     }
   }
 
@@ -80,9 +82,9 @@ function Questionnaire() {
     navigate(`/results/${sessionId}`)
   }
 
-  if (isLoading) return <div>Loading questions...</div>
-  if (error) return <div style={{ color: 'orange' }}>{error}</div>
-  if (questions.length === 0) return <div>No questions available.</div>
+  if (isLoading) return <div className="loading">Loading questions...</div>
+  if (error) return <div className="error">{error}</div>
+  if (questions.length === 0) return <div className="error">No questions available.</div>
 
   if (showShareOptions) {
     return <ShareSession sessionId={sessionId} onSubmit={handleSubmit} />
@@ -95,13 +97,13 @@ function Questionnaire() {
   return (
     <div>
       <h2>{currentQuestion.text}</h2>
-      <div>
+      <div className="answer-buttons">
         {[1, 2, 3, 4, 5].map((value) => (
           <button
             key={value}
             onClick={() => handleAnswer(value)}
             style={{
-              backgroundColor: currentAnswer === value ? 'blue' : '',
+              backgroundColor: currentAnswer === value ? '#2ecc71' : '',
               color: currentAnswer === value ? 'white' : '',
             }}
           >
@@ -111,13 +113,10 @@ function Questionnaire() {
       </div>
       <p>1 - Not at all, 2 - Rarely, 3 - Sometimes, 4 - Often, 5 - Always</p>
       <p>Question {currentQuestionIndex + 1} of {questions.length}</p>
-      <div>
-        {currentQuestionIndex > 0 && (
-          <button onClick={handlePrevious}>Previous</button>
-        )}
-        {isLastQuestion && (
-          <button onClick={handleFinish}>Finish</button>
-        )}
+      <div className="navigation">
+        <button onClick={handlePrevious} disabled={currentQuestionIndex === 0}>Previous</button>
+        {!isLastQuestion && <button onClick={handleNext} disabled={!currentAnswer}>Next</button>}
+        {isLastQuestion && <button onClick={handleFinish} disabled={!currentAnswer}>Finish</button>}
       </div>
     </div>
   )
