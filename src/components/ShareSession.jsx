@@ -1,9 +1,8 @@
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import QRCode from 'qrcode.react';
 
-function ShareSession() {
-  const { sessionId } = useParams();
+function ShareSession({ sessionId, onSubmit }) {
   const shareUrl = `${window.location.origin}/questionnaire/${sessionId}`;
 
   return (
@@ -20,7 +19,7 @@ function ShareSession() {
         <QRCode value={shareUrl} size={256} />
       </div>
       <div className="navigation">
-        <Link to={`/results/${sessionId}`}>View Results</Link>
+        <button onClick={onSubmit}>Submit and View Results</button>
       </div>
     </div>
   );
