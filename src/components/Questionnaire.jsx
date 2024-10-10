@@ -38,13 +38,57 @@ function Questionnaire() {
     initSession()
   }, [sessionId])
 
-  // ... rest of the component code ...
+  const handleAnswer = async (answer) => {
+    const currentQuestion = questions[currentQuestionIndex]
+    setAnswers({ ...answers, [currentQuestion.id]: answer })
+
+    try {
+      await submitAnswer(sessionId, 'user1', currentQuestion.id, answer)
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(currentQuestionIndex + 1)
+      } else {
+        setShowShareOptions(true)
+      }
+    } catch (err) {
+      console.error('Error submitting answer:', err)
+      setError('Failed to submit answer. Please try again.')
+    }
+  }
+
+  const handleSubmit = () => {
+    navigate(`/results/${sessionId}`)
+  }
 
   if (isLoading) return <div className="loading">Loading questions...</div>
   if (error) return <div className="error">{error}</div>
   if (questions.length === 0) return <div className="error">No questions available. Please try refreshing the page.</div>
 
-  // ... rest of the component code ...
+  if (showShareOptions) {
+    return <ShareSession sessionId={sessionId} onSubmit={handleSubmit} />
+  }
+
+  const currentQuestion = questions[currentQuestionIndex]
+
+  return (
+    <div>
+      <h2>{currentQuestion.text}</h2>
+      <div className="answer-buttons">
+        {[1, 2, 3, 4, 5].map((value) => (
+          <button
+            key={value}
+            onClick={() => handleAnswer(value)}
+            className={answers[currentQuestion.id] === value ? 'selected' : ''}
+          >
+            {value}
+          </button>
+        ))}
+      </div>
+      <p>1 - Not at all, 5 - Very much</p>
+      <p>
+        Question {currentQuestionIndex + 1} of {questions.length}
+      </p>
+    </div>
+  )
 }
 
 export default Questionnaire
