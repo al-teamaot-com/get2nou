@@ -1,13 +1,17 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const path = require('path');
+import express from 'express';
+import cors from 'cors';
+import { json } from 'body-parser';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(json());
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'dist')));
