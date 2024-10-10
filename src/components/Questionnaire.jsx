@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { fetchQuestions, submitAnswer, createOrJoinSession } from '../services/api'
+import ShareSession from './ShareSession'
 
 const fallbackQuestions = [
   { id: 1, text: 'Do you enjoy outdoor activities?', category: 'Lifestyle' },
@@ -16,6 +17,8 @@ function Questionnaire() {
   const [answers, setAnswers] = useState({})
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [showShareOptions, setShowShareOptions] = useState(false)
+  const [isFirstUser, setIsFirstUser] = useState(false)
   const { sessionId } = useParams()
   const navigate = useNavigate()
 
@@ -24,10 +27,10 @@ function Questionnaire() {
       try {
         const userId = localStorage.getItem('userId') || Math.random().toString(36).substring(7)
         localStorage.setItem('userId', userId)
-        await createOrJoinSession(sessionId, userId)
+        const sessionData = await createOrJoinSession(sessionId, userId)
+        setIsFirstUser(sessionData.isFirstUser)
         const fetchedQuestions = await fetchQuestions()
         setQuestions(fetchedQuestions)
-        // Load saved answers from localStorage
         const savedAnswers = JSON.parse(localStorage.getItem(`answers_${sessionId}`) || '{}')
         setAnswers(savedAnswers)
       } catch (err) {
@@ -50,10 +53,8 @@ function Questionnaire() {
       await submitAnswer(sessionId, localStorage.getItem('userId'), questions[currentQuestionIndex].id, answer)
     } catch (err) {
       console.error('Error submitting answer:', err)
-      // Continue even if the server request fails
     }
 
-    // Always save answers locally
     localStorage.setItem(`answers_${sessionId}`, JSON.stringify(updatedAnswers))
 
     if (currentQuestionIndex < questions.length - 1) {
@@ -67,6 +68,14 @@ function Questionnaire() {
     }
   }
 
+  const handleFinish = () => {
+    if (isFirstUser) {
+      setShowShareOptions(true)
+    } else {
+      handleSubmit()
+    }
+  }
+
   const handleSubmit = () => {
     navigate(`/results/${sessionId}`)
   }
@@ -74,6 +83,10 @@ function Questionnaire() {
   if (isLoading) return <div>Loading questions...</div>
   if (error) return <div style={{ color: 'orange' }}>{error}</div>
   if (questions.length === 0) return <div>No questions available.</div>
+
+  if (showShareOptions) {
+    return <ShareSession sessionId={sessionId} onSubmit={handleSubmit} />
+  }
 
   const currentQuestion = questions[currentQuestionIndex]
   const isLastQuestion = currentQuestionIndex === questions.length - 1
@@ -103,7 +116,7 @@ function Questionnaire() {
           <button onClick={handlePrevious}>Previous</button>
         )}
         {isLastQuestion && (
-          <button onClick={handleSubmit}>Submit</button>
+          <button onClick={handleFinish}>Finish</button>
         )}
       </div>
     </div>
