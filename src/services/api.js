@@ -8,6 +8,11 @@ const handleResponse = async (response) => {
   return response.json();
 };
 
+const handleError = (error) => {
+  console.error('API Error:', error);
+  throw new Error('Unable to connect to the server. Please try again later.');
+};
+
 export const createOrJoinSession = async (sessionId, userId) => {
   try {
     const response = await fetch(`${API_BASE_URL}/sessions`, {
@@ -17,8 +22,7 @@ export const createOrJoinSession = async (sessionId, userId) => {
     });
     return handleResponse(response);
   } catch (error) {
-    console.error('Error creating or joining session:', error);
-    throw error;
+    return handleError(error);
   }
 };
 
@@ -27,8 +31,7 @@ export const fetchQuestions = async () => {
     const response = await fetch(`${API_BASE_URL}/questions`);
     return handleResponse(response);
   } catch (error) {
-    console.error('Error fetching questions:', error);
-    throw error;
+    return handleError(error);
   }
 };
 
@@ -41,8 +44,7 @@ export const submitAnswer = async (sessionId, userId, questionId, answer) => {
     });
     return handleResponse(response);
   } catch (error) {
-    console.error('Error submitting answer:', error);
-    throw error;
+    return handleError(error);
   }
 };
 
@@ -51,7 +53,6 @@ export const fetchResults = async (sessionId) => {
     const response = await fetch(`${API_BASE_URL}/results/${sessionId}`);
     return handleResponse(response);
   } catch (error) {
-    console.error('Error fetching results:', error);
-    throw error;
+    return handleError(error);
   }
 };
