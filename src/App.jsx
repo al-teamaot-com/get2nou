@@ -4,6 +4,7 @@ import Home from './components/Home'
 import Questionnaire from './components/Questionnaire'
 import Results from './components/Results'
 import JoinSession from './components/JoinSession'
+import ShareSession from './components/ShareSession'
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Route path="/questionnaire/:sessionId" element={<Questionnaire />} />
         <Route path="/results/:sessionId" element={<Results />} />
         <Route path="/join" element={<JoinSession />} />
+        <Route path="/share/:sessionId" element={<ShareSession />} />
       </Routes>
     </Router>
   )
