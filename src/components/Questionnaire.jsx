@@ -3,14 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { fetchQuestions, submitAnswer, createOrJoinSession } from '../services/api'
 import ShareSession from './ShareSession'
 
-const fallbackQuestions = [
-  { id: 1, text: 'Do you enjoy outdoor activities?', category: 'Lifestyle' },
-  { id: 2, text: 'Are you a morning person?', category: 'Lifestyle' },
-  { id: 3, text: 'Do you like to travel?', category: 'Interests' },
-  { id: 4, text: 'Are you interested in politics?', category: 'Interests' },
-  { id: 5, text: 'Do you enjoy cooking?', category: 'Hobbies' }
-];
-
 function Questionnaire() {
   const [questions, setQuestions] = useState([])
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
@@ -31,12 +23,9 @@ function Questionnaire() {
         setIsFirstUser(sessionData.users.length === 1)
         const fetchedQuestions = await fetchQuestions()
         setQuestions(fetchedQuestions)
-        const savedAnswers = JSON.parse(localStorage.getItem(`answers_${sessionId}`) || '{}')
-        setAnswers(savedAnswers)
       } catch (err) {
         console.error('Error initializing session:', err)
-        setError('Unable to connect to the server. Using default questions. Your answers will be saved locally.')
-        setQuestions(fallbackQuestions)
+        setError('Unable to connect to the server. Please try again later.')
       } finally {
         setIsLoading(false)
       }
@@ -46,9 +35,7 @@ function Questionnaire() {
   }, [sessionId])
 
   const handleAnswer = (answer) => {
-    const updatedAnswers = { ...answers, [questions[currentQuestionIndex].id]: answer }
-    setAnswers(updatedAnswers)
-    localStorage.setItem(`answers_${sessionId}`, JSON.stringify(updatedAnswers))
+    setAnswers({ ...answers, [questions[currentQuestionIndex].id]: answer })
   }
 
   const handlePrevious = () => {
