@@ -1,16 +1,9 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 function JoinSession() {
   const [sessionId, setSessionId] = useState('')
   const navigate = useNavigate()
-  const params = useParams()
-
-  useEffect(() => {
-    if (params.sessionId) {
-      setSessionId(params.sessionId)
-    }
-  }, [params.sessionId])
 
   const joinSession = () => {
     if (sessionId) {
@@ -27,7 +20,9 @@ function JoinSession() {
         onChange={(e) => setSessionId(e.target.value)}
         placeholder="Enter Session ID"
       />
-      <button onClick={joinSession}>Join</button>
+      <div className="navigation">
+        <button onClick={joinSession} disabled={!sessionId}>Join</button>
+      </div>
     </div>
   )
 }
