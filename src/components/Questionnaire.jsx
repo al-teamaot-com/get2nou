@@ -29,7 +29,7 @@ function Questionnaire() {
         setQuestions(fetchedQuestions)
       } catch (err) {
         console.error('Error initializing session:', err)
-        setError(`Unable to connect to the server. Please try again later. (Error: ${err.message})`)
+        setError(`Unable to connect to the server. Please check your internet connection and try again. (Error: ${err.message})`)
       } finally {
         setIsLoading(false)
       }
@@ -51,7 +51,7 @@ function Questionnaire() {
       }
     } catch (err) {
       console.error('Error submitting answer:', err)
-      setError(`Failed to submit answer. Please try again. (Error: ${err.message})`)
+      setError(`Failed to submit answer. Please check your internet connection and try again. (Error: ${err.message})`)
     }
   }
 
