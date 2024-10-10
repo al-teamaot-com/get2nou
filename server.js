@@ -1,8 +1,12 @@
-const express = require('express');
-const cors = require('cors');
-const { json } = require('body-parser');
-const { Pool } = require('pg');
-const path = require('path');
+import express from 'express';
+import cors from 'cors';
+import { json } from 'body-parser';
+import { Pool } from 'pg';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3000;
