@@ -1,16 +1,18 @@
-import express from 'express';
-import cors from 'cors';
-import bodyParser from 'body-parser';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(cors());
+// Enable CORS for all routes
+app.use(cors({
+  origin: ['http://localhost:5173', 'https://get2nou-bdc17edccd94.herokuapp.com'],
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(bodyParser.json());
 
 // Serve static files from the React app
@@ -26,32 +28,44 @@ const questions = [
   { id: 5, text: 'Do you enjoy cooking?', category: 'Hobbies' }
 ];
 
+// Logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
+
 // Create or join a session
 app.post('/api/sessions', (req, res) => {
+  console.log('Received request to create/join session:', req.body);
   const { sessionId, userId } = req.body;
   if (!sessions[sessionId]) {
     sessions[sessionId] = { users: [userId], answers: {} };
   } else if (!sessions[sessionId].users.includes(userId)) {
     sessions[sessionId].users.push(userId);
   }
+  console.log('Session created/joined:', sessions[sessionId]);
   res.json({ sessionId, userId });
 });
 
 // Get questions
 app.get('/api/questions', (req, res) => {
+  console.log('Sending questions:', questions);
   res.json(questions);
 });
 
 // Submit an answer
 app.post('/api/answers', (req, res) => {
+  console.log('Received answer:', req.body);
   const { sessionId, userId, questionId, answer } = req.body;
   if (sessions[sessionId]) {
     if (!sessions[sessionId].answers[questionId]) {
       sessions[sessionId].answers[questionId] = {};
     }
     sessions[sessionId].answers[questionId][userId] = answer;
+    console.log('Answer recorded:', sessions[sessionId].answers);
     res.json({ success: true });
   } else {
+    console.log('Session not found:', sessionId);
     res.status(404).json({ error: 'Session not found' });
   }
 });
@@ -59,9 +73,12 @@ app.post('/api/answers', (req, res) => {
 // Get results
 app.get('/api/results/:sessionId', (req, res) => {
   const { sessionId } = req.params;
+  console.log('Fetching results for session:', sessionId);
   if (sessions[sessionId]) {
+    console.log('Sending results:', sessions[sessionId].answers);
     res.json(sessions[sessionId].answers);
   } else {
+    console.log('Session not found:', sessionId);
     res.status(404).json({ error: 'Session not found' });
   }
 });
