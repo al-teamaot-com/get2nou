@@ -1,17 +1,19 @@
-import express from 'express';
-import cors from 'cors';
-import bodyParser from 'body-parser';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
+
+// Improved logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'dist')));
@@ -28,30 +30,37 @@ const questions = [
 
 // Create or join a session
 app.post('/api/sessions', (req, res) => {
+  console.log('Received request to create/join session:', req.body);
   const { sessionId, userId } = req.body;
   if (!sessions[sessionId]) {
     sessions[sessionId] = { users: [userId], answers: {} };
+    console.log(`Created new session: ${sessionId}`);
   } else if (!sessions[sessionId].users.includes(userId)) {
     sessions[sessionId].users.push(userId);
+    console.log(`User ${userId} joined session ${sessionId}`);
   }
   res.json({ sessionId, userId });
 });
 
 // Get questions
 app.get('/api/questions', (req, res) => {
+  console.log('Sending questions:', questions);
   res.json(questions);
 });
 
 // Submit an answer
 app.post('/api/answers', (req, res) => {
+  console.log('Received answer:', req.body);
   const { sessionId, userId, questionId, answer } = req.body;
   if (sessions[sessionId]) {
     if (!sessions[sessionId].answers[questionId]) {
       sessions[sessionId].answers[questionId] = {};
     }
     sessions[sessionId].answers[questionId][userId] = answer;
+    console.log(`Answer recorded for session ${sessionId}, question ${questionId}`);
     res.json({ success: true });
   } else {
+    console.log(`Session not found: ${sessionId}`);
     res.status(404).json({ error: 'Session not found' });
   }
 });
@@ -59,9 +68,11 @@ app.post('/api/answers', (req, res) => {
 // Get results
 app.get('/api/results/:sessionId', (req, res) => {
   const { sessionId } = req.params;
+  console.log(`Fetching results for session: ${sessionId}`);
   if (sessions[sessionId]) {
     res.json(sessions[sessionId].answers);
   } else {
+    console.log(`Session not found: ${sessionId}`);
     res.status(404).json({ error: 'Session not found' });
   }
 });
