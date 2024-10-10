@@ -1,11 +1,7 @@
-import express from 'express';
-import cors from 'cors';
-import bodyParser from 'body-parser';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -14,7 +10,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Serve static files from the React app
-app.use(express.static(join(__dirname, 'dist')));
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // In-memory data store
 const sessions = {};
@@ -29,12 +25,14 @@ const questions = [
 // Create or join a session
 app.post('/api/sessions', (req, res) => {
   const { sessionId, userId } = req.body;
+  let isFirstUser = false;
   if (!sessions[sessionId]) {
     sessions[sessionId] = { users: [userId], answers: {} };
+    isFirstUser = true;
   } else if (!sessions[sessionId].users.includes(userId)) {
     sessions[sessionId].users.push(userId);
   }
-  res.json({ sessionId, userId });
+  res.json({ sessionId, userId, isFirstUser });
 });
 
 // Get questions
@@ -69,7 +67,7 @@ app.get('/api/results/:sessionId', (req, res) => {
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.
 app.get('*', (req, res) => {
-  res.sendFile(join(__dirname, 'dist', 'index.html'));
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 app.listen(port, () => {
