@@ -1,8 +1,8 @@
-import express from 'express';
-import cors from 'cors';
-import { json } from 'body-parser';
-import { Pool } from 'pg';
-import path from 'path';
+const express = require('express');
+const cors = require('cors');
+const { json } = require('body-parser');
+const { Pool } = require('pg');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -43,7 +43,7 @@ app.post('/api/sessions', async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Error creating or joining session:', err);
-    res.status(500).json({ error: 'Internal server error', details: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -58,7 +58,7 @@ app.get('/api/questions', async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching questions:', err);
-    res.status(500).json({ error: 'Internal server error', details: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -77,7 +77,7 @@ app.post('/api/answers', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('Error submitting answer:', err);
-    res.status(500).json({ error: 'Internal server error', details: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -105,7 +105,7 @@ app.get('/api/results/:sessionId', async (req, res) => {
     res.json(results);
   } catch (err) {
     console.error('Error fetching results:', err);
-    res.status(500).json({ error: 'Internal server error', details: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
