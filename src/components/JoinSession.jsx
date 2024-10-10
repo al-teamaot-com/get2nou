@@ -1,15 +1,15 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function JoinSession() {
-  const [sessionId, setSessionId] = useState('')
-  const navigate = useNavigate()
+  const [sessionId, setSessionId] = useState('');
+  const navigate = useNavigate();
 
   const joinSession = () => {
     if (sessionId) {
-      navigate(`/questionnaire/${sessionId}`)
+      navigate(`/questionnaire/${sessionId}`);
     }
-  }
+  };
 
   return (
     <div>
@@ -24,7 +24,7 @@ function JoinSession() {
         <button onClick={joinSession} disabled={!sessionId}>Join</button>
       </div>
     </div>
-  )
+  );
 }
 
-export default JoinSession
+export default JoinSession;
