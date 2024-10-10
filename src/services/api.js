@@ -1,6 +1,6 @@
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? 'https://get2nou-bdc17edccd94.herokuapp.com/api'
-  : '/api';
+  : 'http://localhost:3000/api';
 
 const handleResponse = async (response) => {
   if (!response.ok) {
