@@ -13,9 +13,4 @@ export default defineConfig({
     assetsDir: 'assets',
   },
   root: '.', // Set the root directory to the current directory
-  resolve: {
-    alias: {
-      '@': '/src',
-    },
-  },
 })
