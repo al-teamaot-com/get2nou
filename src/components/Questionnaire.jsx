@@ -17,8 +17,7 @@ function Questionnaire() {
   useEffect(() => {
     const initSession = async () => {
       try {
-        const userId = localStorage.getItem('userId') || Math.random().toString(36).substring(7)
-        localStorage.setItem('userId', userId)
+        const userId = Math.random().toString(36).substring(7)
         const sessionData = await createOrJoinSession(sessionId, userId)
         setIsFirstUser(sessionData.users.length === 1)
         const fetchedQuestions = await fetchQuestions()
@@ -53,7 +52,7 @@ function Questionnaire() {
   const handleFinish = async () => {
     try {
       for (const [questionId, answer] of Object.entries(answers)) {
-        await submitAnswer(sessionId, localStorage.getItem('userId'), parseInt(questionId), answer)
+        await submitAnswer(sessionId, sessionId, parseInt(questionId), answer)
       }
       if (isFirstUser) {
         setShowShareOptions(true)
