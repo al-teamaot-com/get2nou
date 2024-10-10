@@ -25,14 +25,12 @@ const questions = [
 // Create or join a session
 app.post('/api/sessions', (req, res) => {
   const { sessionId, userId } = req.body;
-  let isFirstUser = false;
   if (!sessions[sessionId]) {
     sessions[sessionId] = { users: [userId], answers: {} };
-    isFirstUser = true;
   } else if (!sessions[sessionId].users.includes(userId)) {
     sessions[sessionId].users.push(userId);
   }
-  res.json({ sessionId, userId, isFirstUser });
+  res.json({ sessionId, userId });
 });
 
 // Get questions
