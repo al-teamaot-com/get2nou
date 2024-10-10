@@ -2,14 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fetchQuestions, fetchResults } from '../services/api'
 
-const fallbackQuestions = [
-  { id: 1, text: 'Do you enjoy outdoor activities?', category: 'Lifestyle' },
-  { id: 2, text: 'Are you a morning person?', category: 'Lifestyle' },
-  { id: 3, text: 'Do you like to travel?', category: 'Interests' },
-  { id: 4, text: 'Are you interested in politics?', category: 'Interests' },
-  { id: 5, text: 'Do you enjoy cooking?', category: 'Hobbies' }
-];
-
 function Results() {
   const [results, setResults] = useState([])
   const [questions, setQuestions] = useState([])
@@ -34,18 +26,7 @@ function Results() {
         setResults(formattedResults)
       } catch (err) {
         console.error('Error fetching data:', err)
-        setError('Failed to load results from server. Displaying local results if available.')
-        // Try to load results from localStorage
-        const localAnswers = localStorage.getItem(`answers_${sessionId}`)
-        if (localAnswers) {
-          const parsedAnswers = JSON.parse(localAnswers)
-          const formattedResults = Object.entries(parsedAnswers).map(([questionId, answer]) => ({
-            questionId: parseInt(questionId),
-            answers: { [localStorage.getItem('userId')]: answer }
-          }))
-          setResults(formattedResults)
-          setQuestions(fallbackQuestions)
-        }
+        setError('Failed to load results. Please try again later.')
       } finally {
         setIsLoading(false)
       }
@@ -55,12 +36,7 @@ function Results() {
   }, [sessionId])
 
   if (isLoading) return <div className="loading">Loading results...</div>
-  if (error) return (
-    <div>
-      <p className="error">{error}</p>
-      {results.length > 0 && <p>Displaying locally saved results:</p>}
-    </div>
-  )
+  if (error) return <div className="error">{error}</div>
   if (results.length === 0) return <div className="error">No results available for this session.</div>
 
   return (
