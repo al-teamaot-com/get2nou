@@ -30,6 +30,7 @@ const pool = new Pool({
 async function initDatabase() {
   const client = await pool.connect();
   try {
+    console.log('Connected to database');
     await client.query(`
       CREATE TABLE IF NOT EXISTS sessions (
         id TEXT PRIMARY KEY,
@@ -43,6 +44,9 @@ async function initDatabase() {
         PRIMARY KEY (session_id, user_id, question_id)
       );
     `);
+    console.log('Database initialized');
+  } catch (error) {
+    console.error('Error initializing database:', error);
   } finally {
     client.release();
   }
@@ -60,6 +64,7 @@ const questions = [
 
 // Create or join a session
 app.post('/api/sessions', async (req, res) => {
+  console.log('Received request to create or join session:', req.body);
   const { sessionId, userId } = req.body;
   const client = await pool.connect();
   try {
@@ -67,11 +72,15 @@ app.post('/api/sessions', async (req, res) => {
     const { rows } = await client.query('SELECT * FROM sessions WHERE id = $1', [sessionId]);
     if (rows.length === 0) {
       await client.query('INSERT INTO sessions (id, users) VALUES ($1, $2)', [sessionId, [userId]]);
+      console.log('Created new session:', sessionId);
     } else {
       const users = rows[0].users;
       if (!users.includes(userId)) {
         users.push(userId);
         await client.query('UPDATE sessions SET users = $1 WHERE id = $2', [users, sessionId]);
+        console.log('Added user to existing session:', sessionId);
+      } else {
+        console.log('User already in session:', sessionId);
       }
     }
     await client.query('COMMIT');
@@ -87,11 +96,13 @@ app.post('/api/sessions', async (req, res) => {
 
 // Get questions
 app.get('/api/questions', (req, res) => {
+  console.log('Sending questions');
   res.json(questions);
 });
 
 // Submit an answer
 app.post('/api/answers', async (req, res) => {
+  console.log('Received answer:', req.body);
   const { sessionId, userId, questionId, answer } = req.body;
   const client = await pool.connect();
   try {
@@ -101,6 +112,7 @@ app.post('/api/answers', async (req, res) => {
       [sessionId, userId, questionId, answer]
     );
     await client.query('COMMIT');
+    console.log('Answer submitted successfully');
     res.json({ success: true });
   } catch (error) {
     await client.query('ROLLBACK');
@@ -113,6 +125,7 @@ app.post('/api/answers', async (req, res) => {
 
 // Get results
 app.get('/api/results/:sessionId', async (req, res) => {
+  console.log('Fetching results for session:', req.params.sessionId);
   const { sessionId } = req.params;
   const client = await pool.connect();
   try {
@@ -124,6 +137,7 @@ app.get('/api/results/:sessionId', async (req, res) => {
       acc[row.question_id][row.user_id] = row.answer;
       return acc;
     }, {});
+    console.log('Sending results:', results);
     res.json(results);
   } catch (error) {
     console.error('Error fetching results:', error);
