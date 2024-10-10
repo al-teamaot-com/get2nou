@@ -17,10 +17,15 @@ function Questionnaire() {
   useEffect(() => {
     const initSession = async () => {
       try {
+        console.log('Initializing session...');
         const userId = Math.random().toString(36).substring(7)
+        console.log('Generated userId:', userId);
         const sessionData = await createOrJoinSession(sessionId, userId)
+        console.log('Session data:', sessionData);
         setIsFirstUser(sessionData.users.length === 1)
+        console.log('Fetching questions...');
         const fetchedQuestions = await fetchQuestions()
+        console.log('Fetched questions:', fetchedQuestions);
         setQuestions(fetchedQuestions)
       } catch (err) {
         console.error('Error initializing session:', err)
@@ -33,76 +38,13 @@ function Questionnaire() {
     initSession()
   }, [sessionId])
 
-  const handleAnswer = (answer) => {
-    setAnswers({ ...answers, [questions[currentQuestionIndex].id]: answer })
-  }
-
-  const handlePrevious = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1)
-    }
-  }
-
-  const handleNext = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1)
-    }
-  }
-
-  const handleFinish = async () => {
-    try {
-      for (const [questionId, answer] of Object.entries(answers)) {
-        await submitAnswer(sessionId, sessionId, parseInt(questionId), answer)
-      }
-      if (isFirstUser) {
-        setShowShareOptions(true)
-      } else {
-        navigate(`/results/${sessionId}`)
-      }
-    } catch (err) {
-      console.error('Error submitting answers:', err)
-      setError('Failed to submit answers. Please try again.')
-    }
-  }
+  // ... rest of the component code ...
 
   if (isLoading) return <div className="loading">Loading questions...</div>
   if (error) return <div className="error">{error}</div>
-  if (questions.length === 0) return <div className="error">No questions available.</div>
+  if (questions.length === 0) return <div className="error">No questions available. Please try refreshing the page.</div>
 
-  if (showShareOptions) {
-    return <ShareSession sessionId={sessionId} onSubmit={() => navigate(`/results/${sessionId}`)} />
-  }
-
-  const currentQuestion = questions[currentQuestionIndex]
-  const isLastQuestion = currentQuestionIndex === questions.length - 1
-  const currentAnswer = answers[currentQuestion.id]
-
-  return (
-    <div>
-      <h2>{currentQuestion.text}</h2>
-      <div className="answer-buttons">
-        {[1, 2, 3, 4, 5].map((value) => (
-          <button
-            key={value}
-            onClick={() => handleAnswer(value)}
-            style={{
-              backgroundColor: currentAnswer === value ? '#2ecc71' : '',
-              color: currentAnswer === value ? 'white' : '',
-            }}
-          >
-            {value}
-          </button>
-        ))}
-      </div>
-      <p>1 - Not at all, 2 - Rarely, 3 - Sometimes, 4 - Often, 5 - Always</p>
-      <p>Question {currentQuestionIndex + 1} of {questions.length}</p>
-      <div className="navigation">
-        <button onClick={handlePrevious} disabled={currentQuestionIndex === 0}>Previous</button>
-        {!isLastQuestion && <button onClick={handleNext} disabled={!currentAnswer}>Next</button>}
-        {isLastQuestion && <button onClick={handleFinish} disabled={Object.keys(answers).length !== questions.length}>Submit</button>}
-      </div>
-    </div>
-  )
+  // ... rest of the component code ...
 }
 
 export default Questionnaire
