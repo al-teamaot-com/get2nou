@@ -65,4 +65,56 @@ app.get('/api/questions', async (req, res) => {
 // Submit an answer
 app.post('/api/answers', async (req, res) => {
   console.log('Received request to submit answer');
-  const { sessi
+  const { sessionId, userId, questionId, answer } = req.body;
+  try {
+    const client = await pool.connect();
+    await client.query(
+      'INSERT INTO answers (session_id, user_id, question_id, answer) VALUES ($1, $2, $3, $4)',
+      [sessionId, userId, questionId, answer]
+    );
+    client.release();
+    console.log('Answer submitted successfully');
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error submitting answer:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get results
+app.get('/api/results/:sessionId', async (req, res) => {
+  console.log('Received request for results');
+  const { sessionId } = req.params;
+  try {
+    const client = await pool.connect();
+    const result = await client.query(
+      'SELECT question_id, user_id, answer FROM answers WHERE session_id = $1',
+      [sessionId]
+    );
+    client.release();
+    
+    const results = result.rows.reduce((acc, row) => {
+      if (!acc[row.question_id]) {
+        acc[row.question_id] = {};
+      }
+      acc[row.question_id][row.user_id] = row.answer;
+      return acc;
+    }, {});
+    
+    console.log('Results retrieved successfully');
+    res.json(results);
+  } catch (err) {
+    console.error('Error fetching results:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
