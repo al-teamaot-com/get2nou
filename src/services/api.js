@@ -34,7 +34,9 @@ export const submitAnswer = async (sessionId, userId, questionId, answer) => {
       },
       body: JSON.stringify({ sessionId, userId, questionId, answer }),
     });
-    return handleResponse(response);
+    const data = await handleResponse(response);
+    console.log('Submit answer response:', data);
+    return data;
   } catch (error) {
     console.error('Error submitting answer:', error);
     throw error;
@@ -45,7 +47,9 @@ export const fetchResults = async (sessionId) => {
   try {
     console.log('Fetching results for session:', sessionId);
     const response = await fetch(`${API_BASE_URL}/results/${sessionId}`);
-    return handleResponse(response);
+    const data = await handleResponse(response);
+    console.log('Fetched results:', data);
+    return data;
   } catch (error) {
     console.error('Error fetching results:', error);
     throw error;
@@ -62,7 +66,9 @@ export const createOrJoinSession = async (sessionId, userId) => {
       },
       body: JSON.stringify({ sessionId, userId }),
     });
-    return handleResponse(response);
+    const data = await handleResponse(response);
+    console.log('Create or join session response:', data);
+    return data;
   } catch (error) {
     console.error('Error creating or joining session:', error);
     throw error;
