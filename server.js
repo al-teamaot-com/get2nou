@@ -1,11 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import { json } from 'body-parser';
+import { Pool } from 'pg';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -13,56 +10,102 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(json());
 
+console.log('Initializing database connection...');
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', err);
+  process.exit(-1);
+});
+
+console.log('Database connection initialized');
+
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// In-memory data store
-const sessions = {};
-const questions = [
-  { id: 1, text: 'Do you enjoy outdoor activities?', category: 'Lifestyle' },
-  { id: 2, text: 'Are you a morning person?', category: 'Lifestyle' },
-  { id: 3, text: 'Do you like to travel?', category: 'Interests' },
-  { id: 4, text: 'Are you interested in politics?', category: 'Interests' },
-  { id: 5, text: 'Do you enjoy cooking?', category: 'Hobbies' }
-];
-
 // Create or join a session
-app.post('/api/sessions', (req, res) => {
+app.post('/api/sessions', async (req, res) => {
+  console.log('Received request to create or join session');
   const { sessionId, userId } = req.body;
-  if (!sessions[sessionId]) {
-    sessions[sessionId] = { users: [userId], answers: {} };
-  } else if (!sessions[sessionId].users.includes(userId)) {
-    sessions[sessionId].users.push(userId);
+  try {
+    const client = await pool.connect();
+    const result = await client.query(
+      'INSERT INTO sessions (id, users) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET users = array_append(sessions.users, $3) WHERE NOT $3 = ANY(sessions.users) RETURNING *',
+      [sessionId, [userId], userId]
+    );
+    client.release();
+    console.log('Session created or joined successfully');
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating or joining session:', err);
+    res.status(500).json({ error: 'Internal server error', details: err.message });
   }
-  res.json({ sessionId, userId });
 });
 
 // Get questions
-app.get('/api/questions', (req, res) => {
-  res.json(questions);
+app.get('/api/questions', async (req, res) => {
+  console.log('Received request for questions');
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT * FROM questions');
+    client.release();
+    console.log('Questions retrieved successfully');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching questions:', err);
+    res.status(500).json({ error: 'Internal server error', details: err.message });
+  }
 });
 
 // Submit an answer
-app.post('/api/answers', (req, res) => {
+app.post('/api/answers', async (req, res) => {
+  console.log('Received request to submit answer');
   const { sessionId, userId, questionId, answer } = req.body;
-  if (sessions[sessionId]) {
-    if (!sessions[sessionId].answers[questionId]) {
-      sessions[sessionId].answers[questionId] = {};
-    }
-    sessions[sessionId].answers[questionId][userId] = answer;
+  try {
+    const client = await pool.connect();
+    await client.query(
+      'INSERT INTO answers (session_id, user_id, question_id, answer) VALUES ($1, $2, $3, $4)',
+      [sessionId, userId, questionId, answer]
+    );
+    client.release();
+    console.log('Answer submitted successfully');
     res.json({ success: true });
-  } else {
-    res.status(404).json({ error: 'Session not found' });
+  } catch (err) {
+    console.error('Error submitting answer:', err);
+    res.status(500).json({ error: 'Internal server error', details: err.message });
   }
 });
 
 // Get results
-app.get('/api/results/:sessionId', (req, res) => {
+app.get('/api/results/:sessionId', async (req, res) => {
+  console.log('Received request for results');
   const { sessionId } = req.params;
-  if (sessions[sessionId]) {
-    res.json(sessions[sessionId].answers);
-  } else {
-    res.status(404).json({ error: 'Session not found' });
+  try {
+    const client = await pool.connect();
+    const result = await client.query(
+      'SELECT question_id, user_id, answer FROM answers WHERE session_id = $1',
+      [sessionId]
+    );
+    client.release();
+    
+    const results = result.rows.reduce((acc, row) => {
+      if (!acc[row.question_id]) {
+        acc[row.question_id] = {};
+      }
+      acc[row.question_id][row.user_id] = row.answer;
+      return acc;
+    }, {});
+    
+    console.log('Results retrieved successfully');
+    res.json(results);
+  } catch (err) {
+    console.error('Error fetching results:', err);
+    res.status(500).json({ error: 'Internal server error', details: err.message });
   }
 });
 
