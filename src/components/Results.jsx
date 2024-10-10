@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { fetchQuestions, fetchResults } from '../services/api'
+import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { fetchQuestions, fetchResults } from '../services/api';
 
 function Results() {
-  const [results, setResults] = useState([])
-  const [questions, setQuestions] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const { sessionId } = useParams()
+  const [results, setResults] = useState([]);
+  const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { sessionId } = useParams();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -15,35 +15,34 @@ function Results() {
         const [questionsData, resultsData] = await Promise.all([
           fetchQuestions(),
           fetchResults(sessionId)
-        ])
+        ]);
 
-        setQuestions(questionsData)
+        setQuestions(questionsData);
         
         const formattedResults = Object.entries(resultsData).map(([questionId, answers]) => ({
           questionId: parseInt(questionId),
           answers
-        }))
-        setResults(formattedResults)
+        }));
+        setResults(formattedResults);
       } catch (err) {
-        console.error('Error fetching data:', err)
-        setError('Failed to load results. Please try again later.')
+        setError('Failed to load results. Please try again later.');
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchData()
-  }, [sessionId])
+    fetchData();
+  }, [sessionId]);
 
-  if (isLoading) return <div className="loading">Loading results...</div>
-  if (error) return <div className="error">{error}</div>
-  if (results.length === 0) return <div className="error">No results available for this session.</div>
+  if (isLoading) return <div className="loading">Loading results...</div>;
+  if (error) return <div className="error">{error}</div>;
+  if (results.length === 0) return <div className="error">No results available for this session.</div>;
 
   return (
     <div>
       <h2>Results</h2>
       {results.map(({ questionId, answers }) => {
-        const question = questions.find(q => q.id === questionId) || { text: `Question ${questionId}` }
+        const question = questions.find(q => q.id === questionId) || { text: `Question ${questionId}` };
         return (
           <div key={questionId} className="result-item">
             <h3>{question.text}</h3>
@@ -51,7 +50,7 @@ function Results() {
               <p key={userId}>{userId}: {answer}</p>
             ))}
           </div>
-        )
+        );
       })}
       <div className="navigation">
         <Link to="/">
@@ -59,7 +58,7 @@ function Results() {
         </Link>
       </div>
     </div>
-  )
+  );
 }
 
-export default Results
+export default Results;
