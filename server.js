@@ -57,24 +57,12 @@ app.get('/api/questions', async (req, res) => {
   }
 });
 
-app.get('/api/categories', async (req, res) => {
-  try {
-    const client = await pool.connect();
-    const result = await client.query('SELECT * FROM categories');
-    client.release();
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error fetching categories:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 app.post('/api/answers', async (req, res) => {
   const { sessionId, userId, questionId, answer } = req.body;
   try {
     const client = await pool.connect();
     await client.query(
-      'INSERT INTO answers (session_id, user_id, question_id, answer) VALUES ($1, $2, $3, $4)',
+      'INSERT INTO answers (session_id, user_id, question_id, answer) VALUES ($1, $2, $3, $4) ON CONFLICT (session_id, user_id, question_id) DO UPDATE SET answer = $4',
       [sessionId, userId, questionId, answer]
     );
     client.release();
@@ -106,6 +94,18 @@ app.get('/api/results/:sessionId', async (req, res) => {
     res.json(results);
   } catch (err) {
     console.error('Error fetching results:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/categories', async (req, res) => {
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT * FROM categories');
+    client.release();
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching categories:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -168,14 +168,21 @@ app.put('/api/questions/:id', async (req, res) => {
 
 app.delete('/api/questions/:id', async (req, res) => {
   const { id } = req.params;
+  const client = await pool.connect();
   try {
-    const client = await pool.connect();
+    await client.query('BEGIN');
+    // First, delete associated entries in question_categories
+    await client.query('DELETE FROM question_categories WHERE question_id = $1', [id]);
+    // Then, delete the question
     await client.query('DELETE FROM questions WHERE id = $1', [id]);
-    client.release();
+    await client.query('COMMIT');
     res.json({ success: true });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Error deleting question:', err);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
   }
 });
 
