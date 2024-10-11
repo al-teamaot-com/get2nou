@@ -42,11 +42,29 @@ app.post('/api/sessions', async (req, res) => {
 app.get('/api/questions', async (req, res) => {
   try {
     const client = await pool.connect();
-    const result = await client.query('SELECT * FROM questions');
+    const result = await client.query(`
+      SELECT q.id, q.text, json_agg(json_build_object('id', c.id, 'name', c.name)) as categories
+      FROM questions q
+      LEFT JOIN question_categories qc ON q.id = qc.question_id
+      LEFT JOIN categories c ON qc.category_id = c.id
+      GROUP BY q.id, q.text
+    `);
     client.release();
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching questions:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/categories', async (req, res) => {
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT * FROM categories');
+    client.release();
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching categories:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -56,7 +74,7 @@ app.post('/api/answers', async (req, res) => {
   try {
     const client = await pool.connect();
     await client.query(
-      'INSERT INTO answers (session_id, user_id, question_id, answer) VALUES ($1, $2, $3, $4) ON CONFLICT (session_id, user_id, question_id) DO UPDATE SET answer = $4',
+      'INSERT INTO answers (session_id, user_id, question_id, answer) VALUES ($1, $2, $3, $4)',
       [sessionId, userId, questionId, answer]
     );
     client.release();
@@ -93,35 +111,58 @@ app.get('/api/results/:sessionId', async (req, res) => {
 });
 
 app.post('/api/questions', async (req, res) => {
-  const { text, category } = req.body;
+  const { text, categoryIds } = req.body;
+  const client = await pool.connect();
   try {
-    const client = await pool.connect();
-    const result = await client.query(
-      'INSERT INTO questions (text, category) VALUES ($1, $2) RETURNING *',
-      [text, category]
+    await client.query('BEGIN');
+    const questionResult = await client.query(
+      'INSERT INTO questions (text) VALUES ($1) RETURNING id',
+      [text]
     );
-    client.release();
-    res.json(result.rows[0]);
+    const questionId = questionResult.rows[0].id;
+    
+    for (const categoryId of categoryIds) {
+      await client.query(
+        'INSERT INTO question_categories (question_id, category_id) VALUES ($1, $2)',
+        [questionId, categoryId]
+      );
+    }
+    
+    await client.query('COMMIT');
+    res.json({ id: questionId, text, categories: categoryIds });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Error creating question:', err);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
   }
 });
 
 app.put('/api/questions/:id', async (req, res) => {
   const { id } = req.params;
-  const { text, category } = req.body;
+  const { text, categoryIds } = req.body;
+  const client = await pool.connect();
   try {
-    const client = await pool.connect();
-    const result = await client.query(
-      'UPDATE questions SET text = $1, category = $2 WHERE id = $3 RETURNING *',
-      [text, category, id]
-    );
-    client.release();
-    res.json(result.rows[0]);
+    await client.query('BEGIN');
+    await client.query('UPDATE questions SET text = $1 WHERE id = $2', [text, id]);
+    await client.query('DELETE FROM question_categories WHERE question_id = $1', [id]);
+    
+    for (const categoryId of categoryIds) {
+      await client.query(
+        'INSERT INTO question_categories (question_id, category_id) VALUES ($1, $2)',
+        [id, categoryId]
+      );
+    }
+    
+    await client.query('COMMIT');
+    res.json({ id, text, categories: categoryIds });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Error updating question:', err);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
   }
 });
 
