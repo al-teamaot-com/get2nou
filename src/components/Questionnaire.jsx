@@ -34,8 +34,7 @@ function Questionnaire() {
 
   const handleAnswer = async (answer) => {
     const currentQuestion = questions[currentQuestionIndex];
-    const newAnswers = { ...answers, [currentQuestion.id]: answer };
-    setAnswers(newAnswers);
+    setAnswers({ ...answers, [currentQuestion.id]: answer });
 
     try {
       await submitAnswer(sessionId, userId, currentQuestion.id, answer);
@@ -46,12 +45,6 @@ function Questionnaire() {
       }
     } catch (err) {
       setError(`Failed to submit answer. Please check your internet connection and try again. (Error: ${err.message})`);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
   };
 
@@ -87,14 +80,6 @@ function Questionnaire() {
       <p>
         Question {currentQuestionIndex + 1} of {questions.length}
       </p>
-      <div className="navigation-buttons">
-        <button onClick={handlePrevious} disabled={currentQuestionIndex === 0}>
-          Previous
-        </button>
-        {currentQuestionIndex === questions.length - 1 && (
-          <button onClick={() => setShowShareOptions(true)}>Finish</button>
-        )}
-      </div>
     </div>
   );
 }
