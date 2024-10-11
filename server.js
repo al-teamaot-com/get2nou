@@ -1,13 +1,16 @@
-const express = require('express');
-const pg = require('pg');
-const dotenv = require('dotenv');
-const path = require('path');
-const { promisify } = require('util');
+import express from 'express';
+import pg from 'pg';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
@@ -17,7 +20,7 @@ const pool = new pg.Pool({
 });
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'dist')));
+app.use(express.static(join(__dirname, 'dist')));
 
 // API routes
 app.post('/api/sessions', async (req, res) => {
@@ -89,55 +92,11 @@ app.get('/api/results/:sessionId', async (req, res) => {
   }
 });
 
-app.put('/api/questions/:id', async (req, res) => {
-  const { id } = req.params;
-  const { text, category } = req.body;
-  let client;
-  try {
-    client = await pool.connect();
-    await client.query('BEGIN');
-
-    console.log('Updating question:', id, text, category);
-
-    const updateResult = await client.query(
-      'UPDATE questions SET text = $1, category = $2 WHERE id = $3 RETURNING *',
-      [text, category, id]
-    );
-
-    console.log('Update result:', updateResult.rows);
-
-    if (updateResult.rowCount === 0) {
-      throw new Error('Question not found');
-    }
-
-    await client.query('COMMIT');
-    res.json(updateResult.rows[0]);
-  } catch (err) {
-    console.error('Error updating question:', err);
-    if (client) {
-      await client.query('ROLLBACK');
-    }
-    res.status(500).json({ error: 'Internal server error', details: err.message });
-  } finally {
-    if (client) {
-      client.release();
-    }
-  }
-});
-
 // Serve React app
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  res.sendFile(join(__dirname, 'dist', 'index.html'));
 });
 
-const startServer = async () => {
-  try {
-    await promisify(app.listen.bind(app))(port);
-    console.log(`Server running on port ${port}`);
-  } catch (err) {
-    console.error('Failed to start server:', err);
-    process.exit(1);
-  }
-};
-
-startServer();
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
