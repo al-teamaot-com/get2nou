@@ -1,5 +1,30 @@
 /* ... (keep existing styles) ... */
 
+.questionnaire {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.navigation-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.question-container {
+  background-color: #f0f0f0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.answer-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin: 20px 0;
+}
+
 .answer-buttons button {
   flex: 1 0 18%;
   min-width: 60px;
@@ -20,6 +45,28 @@
   background-color: #2ecc71;
   border-color: #2ecc71;
   color: #fff;
+}
+
+.fade-enter {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transform: translateX(0%);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.fade-exit {
+  opacity: 1;
+  transform: translateX(0%);
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transform: translateX(-100%);
+  transition: opacity 300ms, transform 300ms;
 }
 
 /* ... (keep other styles) ... */
