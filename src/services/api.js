@@ -13,6 +13,11 @@ export const fetchQuestions = async () => {
   return handleResponse(response);
 };
 
+export const fetchCategories = async () => {
+  const response = await fetch(`${API_BASE_URL}/categories`);
+  return handleResponse(response);
+};
+
 export const submitAnswer = async (sessionId, userId, questionId, answer) => {
   const response = await fetch(`${API_BASE_URL}/answers`, {
     method: 'POST',
@@ -67,4 +72,23 @@ export const deleteQuestion = async (id) => {
     method: 'DELETE',
   });
   return handleResponse(response);
+};
+
+// These functions are not implemented on the server side yet
+export const createCategory = async (name) => {
+  // Placeholder implementation
+  console.log('Creating category:', name);
+  return { id: Date.now(), name };
+};
+
+export const updateCategory = async (id, name) => {
+  // Placeholder implementation
+  console.log('Updating category:', id, name);
+  return { id, name };
+};
+
+export const deleteCategory = async (id) => {
+  // Placeholder implementation
+  console.log('Deleting category:', id);
+  return { success: true };
 };
