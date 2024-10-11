@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 function Home() {
   const navigate = useNavigate();
@@ -9,16 +9,16 @@ function Home() {
     navigate(`/questionnaire/${sessionId}`);
   };
 
-  console.log('Home component rendered');
-
   return (
-    <div>
-      <h2>Welcome to Get to Know You</h2>
-      <p>Start a new session or join an existing one.</p>
-      <button onClick={startNewSession}>Start New Session</button>
-      <button onClick={() => navigate('/join')}>Join Existing Session</button>
-      <div>
-        <Link to="/database">Database Manager</Link>
+    <div className="container">
+      <h1>Welcome to Get to Know You</h1>
+      <p>Start a new session or join an existing one to begin answering questions and learning about others!</p>
+      <div className="button-group">
+        <button onClick={startNewSession}>Start New Session</button>
+        <button onClick={() => navigate('/join')}>Join Existing Session</button>
+      </div>
+      <div className="button-group">
+        <button onClick={() => navigate('/database')}>Manage Questions</button>
       </div>
     </div>
   );
