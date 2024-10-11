@@ -49,6 +49,10 @@ function Questionnaire() {
     }
   };
 
+  const handleSubmit = () => {
+    navigate(`/results/${sessionId}`);
+  };
+
   const handlePrevious = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
@@ -61,10 +65,6 @@ function Questionnaire() {
     } else {
       setShowShareOptions(true);
     }
-  };
-
-  const handleSubmit = () => {
-    navigate(`/results/${sessionId}`);
   };
 
   if (isLoading) return <div className="loading">Loading questions...</div>;
