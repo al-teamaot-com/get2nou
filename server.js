@@ -22,123 +22,67 @@ const pool = new pg.Pool({
 app.use(express.json());
 app.use(express.static(join(__dirname, 'dist')));
 
-// API routes
-app.post('/api/sessions', async (req, res) => {
-  const { sessionId, userId } = req.body;
-  try {
-    const client = await pool.connect();
-    const result = await client.query(
-      'INSERT INTO sessions (id, users) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET users = array_append(sessions.users, $3) WHERE NOT $3 = ANY(sessions.users) RETURNING *',
-      [sessionId, [userId], userId]
-    );
-    client.release();
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Error creating or joining session:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+// Existing routes...
 
-app.get('/api/questions', async (req, res) => {
+// New category routes
+app.get('/api/categories', async (req, res) => {
   try {
     const client = await pool.connect();
-    const result = await client.query('SELECT * FROM questions');
+    const result = await client.query('SELECT * FROM categories');
     client.release();
     res.json(result.rows);
   } catch (err) {
-    console.error('Error fetching questions:', err);
+    console.error('Error fetching categories:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.post('/api/answers', async (req, res) => {
-  const { sessionId, userId, questionId, answer } = req.body;
-  try {
-    const client = await pool.connect();
-    await client.query(
-      'INSERT INTO answers (session_id, user_id, question_id, answer) VALUES ($1, $2, $3, $4) ON CONFLICT (session_id, user_id, question_id) DO UPDATE SET answer = $4',
-      [sessionId, userId, questionId, answer]
-    );
-    client.release();
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Error submitting answer:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-app.get('/api/results/:sessionId', async (req, res) => {
-  const { sessionId } = req.params;
+app.post('/api/categories', async (req, res) => {
+  const { name } = req.body;
   try {
     const client = await pool.connect();
     const result = await client.query(
-      'SELECT question_id, user_id, answer FROM answers WHERE session_id = $1',
-      [sessionId]
-    );
-    client.release();
-    
-    const results = result.rows.reduce((acc, row) => {
-      if (!acc[row.question_id]) {
-        acc[row.question_id] = {};
-      }
-      acc[row.question_id][row.user_id] = row.answer;
-      return acc;
-    }, {});
-    
-    res.json(results);
-  } catch (err) {
-    console.error('Error fetching results:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// New routes for question management
-app.post('/api/questions', async (req, res) => {
-  const { text, category } = req.body;
-  try {
-    const client = await pool.connect();
-    const result = await client.query(
-      'INSERT INTO questions (text, category) VALUES ($1, $2) RETURNING *',
-      [text, category]
+      'INSERT INTO categories (name) VALUES ($1) RETURNING *',
+      [name]
     );
     client.release();
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error('Error creating question:', err);
+    console.error('Error creating category:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.put('/api/questions/:id', async (req, res) => {
+app.put('/api/categories/:id', async (req, res) => {
   const { id } = req.params;
-  const { text, category } = req.body;
+  const { name } = req.body;
   try {
     const client = await pool.connect();
     const result = await client.query(
-      'UPDATE questions SET text = $1, category = $2 WHERE id = $3 RETURNING *',
-      [text, category, id]
+      'UPDATE categories SET name = $1 WHERE id = $2 RETURNING *',
+      [name, id]
     );
     client.release();
     if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Question not found' });
+      res.status(404).json({ error: 'Category not found' });
     } else {
       res.json(result.rows[0]);
     }
   } catch (err) {
-    console.error('Error updating question:', err);
+    console.error('Error updating category:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.delete('/api/questions/:id', async (req, res) => {
+app.delete('/api/categories/:id', async (req, res) => {
   const { id } = req.params;
   try {
     const client = await pool.connect();
-    await client.query('DELETE FROM questions WHERE id = $1', [id]);
+    await client.query('DELETE FROM categories WHERE id = $1', [id]);
     client.release();
     res.status(204).send();
   } catch (err) {
-    console.error('Error deleting question:', err);
+    console.error('Error deleting category:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
