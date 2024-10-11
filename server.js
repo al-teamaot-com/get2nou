@@ -42,12 +42,7 @@ app.post('/api/sessions', async (req, res) => {
 app.get('/api/questions', async (req, res) => {
   try {
     const client = await pool.connect();
-    const result = await client.query(`
-      SELECT q.*, array_agg(qc.category_id) as categories
-      FROM questions q
-      LEFT JOIN question_categories qc ON q.id = qc.question_id
-      GROUP BY q.id
-    `);
+    const result = await client.query('SELECT * FROM questions');
     client.release();
     res.json(result.rows);
   } catch (err) {
@@ -61,7 +56,7 @@ app.post('/api/answers', async (req, res) => {
   try {
     const client = await pool.connect();
     await client.query(
-      'INSERT INTO answers (session_id, user_id, question_id, answer) VALUES ($1, $2, $3, $4)',
+      'INSERT INTO answers (session_id, user_id, question_id, answer) VALUES ($1, $2, $3, $4) ON CONFLICT (session_id, user_id, question_id) DO UPDATE SET answer = $4',
       [sessionId, userId, questionId, answer]
     );
     client.release();
@@ -93,85 +88,6 @@ app.get('/api/results/:sessionId', async (req, res) => {
     res.json(results);
   } catch (err) {
     console.error('Error fetching results:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-app.post('/api/questions', async (req, res) => {
-  const { text, categories } = req.body;
-  try {
-    const client = await pool.connect();
-    await client.query('BEGIN');
-    const questionResult = await client.query(
-      'INSERT INTO questions (text) VALUES ($1) RETURNING id',
-      [text]
-    );
-    const questionId = questionResult.rows[0].id;
-    for (const categoryId of categories) {
-      await client.query(
-        'INSERT INTO question_categories (question_id, category_id) VALUES ($1, $2)',
-        [questionId, categoryId]
-      );
-    }
-    await client.query('COMMIT');
-    client.release();
-    res.json({ id: questionId, text, categories });
-  } catch (err) {
-    console.error('Error creating question:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-app.put('/api/questions/:id', async (req, res) => {
-  const { id } = req.params;
-  const { text, categories } = req.body;
-  try {
-    const client = await pool.connect();
-    await client.query('BEGIN');
-    await client.query(
-      'UPDATE questions SET text = $1 WHERE id = $2',
-      [text, id]
-    );
-    await client.query('DELETE FROM question_categories WHERE question_id = $1', [id]);
-    for (const categoryId of categories) {
-      await client.query(
-        'INSERT INTO question_categories (question_id, category_id) VALUES ($1, $2)',
-        [id, categoryId]
-      );
-    }
-    await client.query('COMMIT');
-    client.release();
-    res.json({ id, text, categories });
-  } catch (err) {
-    console.error('Error updating question:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-app.delete('/api/questions/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const client = await pool.connect();
-    await client.query('BEGIN');
-    await client.query('DELETE FROM question_categories WHERE question_id = $1', [id]);
-    await client.query('DELETE FROM questions WHERE id = $1', [id]);
-    await client.query('COMMIT');
-    client.release();
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Error deleting question:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-app.get('/api/categories', async (req, res) => {
-  try {
-    const client = await pool.connect();
-    const result = await client.query('SELECT * FROM categories');
-    client.release();
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error fetching categories:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
