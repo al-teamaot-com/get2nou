@@ -19,6 +19,7 @@ function Home() {
       </div>
       <div className="button-group">
         <button onClick={() => navigate('/database')}>Manage Questions</button>
+        <button onClick={() => navigate('/categories')}>Manage Categories</button>
       </div>
     </div>
   );
