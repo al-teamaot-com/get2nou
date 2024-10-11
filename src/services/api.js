@@ -40,24 +40,24 @@ export const createOrJoinSession = async (sessionId, userId) => {
   return handleResponse(response);
 };
 
-export const createQuestion = async (text, category) => {
+export const createQuestion = async (text, categories) => {
   const response = await fetch(`${API_BASE_URL}/questions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ text, category }),
+    body: JSON.stringify({ text, categories }),
   });
   return handleResponse(response);
 };
 
-export const updateQuestion = async (id, text, category) => {
+export const updateQuestion = async (id, text, categories) => {
   const response = await fetch(`${API_BASE_URL}/questions/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ text, category }),
+    body: JSON.stringify({ text, categories }),
   });
   return handleResponse(response);
 };
