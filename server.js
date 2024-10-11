@@ -94,65 +94,6 @@ app.get('/api/results/:sessionId', async (req, res, next) => {
   }
 });
 
-// Category routes
-app.get('/api/categories', async (req, res, next) => {
-  try {
-    const client = await pool.connect();
-    const result = await client.query('SELECT * FROM categories');
-    client.release();
-    res.json(result.rows);
-  } catch (err) {
-    next(err);
-  }
-});
-
-app.post('/api/categories', async (req, res, next) => {
-  const { name } = req.body;
-  try {
-    const client = await pool.connect();
-    const result = await client.query(
-      'INSERT INTO categories (name) VALUES ($1) RETURNING *',
-      [name]
-    );
-    client.release();
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    next(err);
-  }
-});
-
-app.put('/api/categories/:id', async (req, res, next) => {
-  const { id } = req.params;
-  const { name } = req.body;
-  try {
-    const client = await pool.connect();
-    const result = await client.query(
-      'UPDATE categories SET name = $1 WHERE id = $2 RETURNING *',
-      [name, id]
-    );
-    client.release();
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Category not found' });
-    } else {
-      res.json(result.rows[0]);
-    }
-  } catch (err) {
-    next(err);
-  }
-});
-
-app.delete('/api/categories/:id', async (req, res, next) => {
-  const { id } = req.params;
-  try {
-    const client = await pool.connect();
-    await client.query('DELETE FROM categories WHERE id = $1', [id]);
-    client.release();
-    res.status(204).send();
-  } catch (err) {
-    next(err);
-  }
-});
-
 // Serve React app
 app.get('*', (req, res) => {
   res.sendFile(join(__dirname, 'dist', 'index.html'));
