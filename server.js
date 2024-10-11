@@ -42,7 +42,7 @@ app.post('/api/sessions', async (req, res) => {
 app.get('/api/questions', async (req, res) => {
   try {
     const client = await pool.connect();
-    const result = await client.query('SELECT * FROM questions');
+    const result = await client.query('SELECT q.*, array_agg(qc.category_id) as categories FROM questions q LEFT JOIN question_categories qc ON q.id = qc.question_id GROUP BY q.id');
     client.release();
     res.json(result.rows);
   } catch (err) {
@@ -93,55 +93,83 @@ app.get('/api/results/:sessionId', async (req, res) => {
 });
 
 app.post('/api/questions', async (req, res) => {
-  const { text, category } = req.body;
+  const { text, categories } = req.body;
+  const client = await pool.connect();
   try {
-    const client = await pool.connect();
-    const result = await client.query(
-      'INSERT INTO questions (text, category) VALUES ($1, $2) RETURNING *',
-      [text, category]
+    await client.query('BEGIN');
+    const questionResult = await client.query(
+      'INSERT INTO questions (text) VALUES ($1) RETURNING id',
+      [text]
     );
-    client.release();
-    res.json(result.rows[0]);
+    const questionId = questionResult.rows[0].id;
+    for (const categoryId of categories) {
+      await client.query(
+        'INSERT INTO question_categories (question_id, category_id) VALUES ($1, $2)',
+        [questionId, categoryId]
+      );
+    }
+    await client.query('COMMIT');
+    res.json({ id: questionId, text, categories });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Error creating question:', err);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
   }
 });
 
 app.put('/api/questions/:id', async (req, res) => {
   const { id } = req.params;
-  const { text, category } = req.body;
+  const { text, categories } = req.body;
+  const client = await pool.connect();
   try {
-    const client = await pool.connect();
-    const result = await client.query(
-      'UPDATE questions SET text = $1, category = $2 WHERE id = $3 RETURNING *',
-      [text, category, id]
-    );
-    client.release();
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Question not found' });
-    } else {
-      res.json(result.rows[0]);
+    await client.query('BEGIN');
+    await client.query('UPDATE questions SET text = $1 WHERE id = $2', [text, id]);
+    await client.query('DELETE FROM question_categories WHERE question_id = $1', [id]);
+    for (const categoryId of categories) {
+      await client.query(
+        'INSERT INTO question_categories (question_id, category_id) VALUES ($1, $2)',
+        [id, categoryId]
+      );
     }
+    await client.query('COMMIT');
+    res.json({ id, text, categories });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Error updating question:', err);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
   }
 });
 
 app.delete('/api/questions/:id', async (req, res) => {
   const { id } = req.params;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM question_categories WHERE question_id = $1', [id]);
+    await client.query('DELETE FROM questions WHERE id = $1', [id]);
+    await client.query('COMMIT');
+    res.json({ success: true });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error deleting question:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
+app.get('/api/categories', async (req, res) => {
   try {
     const client = await pool.connect();
-    const result = await client.query('DELETE FROM questions WHERE id = $1 RETURNING *', [id]);
+    const result = await client.query('SELECT * FROM categories');
     client.release();
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Question not found' });
-    } else {
-      res.json({ success: true });
-    }
+    res.json(result.rows);
   } catch (err) {
-    console.error('Error deleting question:', err);
+    console.error('Error fetching categories:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
