@@ -22,57 +22,70 @@ const pool = new pg.Pool({
 app.use(express.json());
 app.use(express.static(join(__dirname, 'dist')));
 
+// Improved error logging middleware
+app.use((err, req, res, next) => {
+  console.error('Error details:', err);
+  res.status(500).json({ error: 'Internal server error', details: err.message });
+});
+
 // API routes
-app.post('/api/sessions', async (req, res) => {
+app.post('/api/sessions', async (req, res, next) => {
   const { sessionId, userId } = req.body;
   try {
     const client = await pool.connect();
+    console.log(`Creating/joining session: ${sessionId} for user: ${userId}`);
     const result = await client.query(
       'INSERT INTO sessions (id, users) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET users = array_append(sessions.users, $3) WHERE NOT $3 = ANY(sessions.users) RETURNING *',
       [sessionId, [userId], userId]
     );
     client.release();
+    console.log('Session created/joined successfully');
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Error creating or joining session:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    next(err);
   }
 });
 
-app.get('/api/questions', async (req, res) => {
+app.get('/api/questions', async (req, res, next) => {
   try {
     const client = await pool.connect();
+    console.log('Fetching questions');
     const result = await client.query('SELECT * FROM questions');
     client.release();
+    console.log(`Fetched ${result.rows.length} questions`);
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching questions:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    next(err);
   }
 });
 
-app.post('/api/answers', async (req, res) => {
-  const { sessionId, userId, questionId, answer, userHandle } = req.body;
+app.post('/api/answers', async (req, res, next) => {
+  const { sessionId, userId, questionId, answer } = req.body;
   try {
     const client = await pool.connect();
+    console.log(`Submitting answer: Session ${sessionId}, User ${userId}, Question ${questionId}, Answer ${answer}`);
     await client.query(
-      'INSERT INTO answers (session_id, user_id, question_id, answer, user_handle) VALUES ($1, $2, $3, $4, $5)',
-      [sessionId, userId, questionId, answer, userHandle]
+      'INSERT INTO answers (session_id, user_id, question_id, answer) VALUES ($1, $2, $3, $4)',
+      [sessionId, userId, questionId, answer]
     );
     client.release();
+    console.log('Answer submitted successfully');
     res.json({ success: true });
   } catch (err) {
     console.error('Error submitting answer:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    next(err);
   }
 });
 
-app.get('/api/results/:sessionId', async (req, res) => {
+app.get('/api/results/:sessionId', async (req, res, next) => {
   const { sessionId } = req.params;
   try {
     const client = await pool.connect();
+    console.log(`Fetching results for session: ${sessionId}`);
     const result = await client.query(
-      'SELECT question_id, user_id, answer, user_handle FROM answers WHERE session_id = $1',
+      'SELECT question_id, user_id, answer FROM answers WHERE session_id = $1',
       [sessionId]
     );
     client.release();
@@ -81,14 +94,15 @@ app.get('/api/results/:sessionId', async (req, res) => {
       if (!acc[row.question_id]) {
         acc[row.question_id] = {};
       }
-      acc[row.question_id][row.user_id] = { value: row.answer, userHandle: row.user_handle };
+      acc[row.question_id][row.user_id] = row.answer;
       return acc;
     }, {});
     
+    console.log(`Fetched results for ${Object.keys(results).length} questions`);
     res.json(results);
   } catch (err) {
     console.error('Error fetching results:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    next(err);
   }
 });
 
