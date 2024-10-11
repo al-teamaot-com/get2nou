@@ -4,7 +4,6 @@ import Home from './components/Home';
 import Questionnaire from './components/Questionnaire';
 import Results from './components/Results';
 import JoinSession from './components/JoinSession';
-import DatabaseManager from './components/DatabaseManager';
 import './App.css';
 
 function App() {
@@ -16,7 +15,6 @@ function App() {
           <Route path="/questionnaire/:sessionId" element={<Questionnaire />} />
           <Route path="/results/:sessionId" element={<Results />} />
           <Route path="/join" element={<JoinSession />} />
-          <Route path="/database" element={<DatabaseManager />} />
         </Routes>
       </div>
     </Router>
