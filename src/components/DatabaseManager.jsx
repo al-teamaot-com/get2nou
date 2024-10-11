@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { fetchQuestions, createQuestion, updateQuestion, deleteQuestion } from '../services/api';
+import { fetchQuestions, createQuestion, updateQuestion, deleteQuestion, fetchCategories } from '../services/api';
 
 function DatabaseManager() {
   const [questions, setQuestions] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [newQuestion, setNewQuestion] = useState({ text: '', category: '' });
+  const [newQuestion, setNewQuestion] = useState({ text: '', categories: [] });
   const [editingQuestion, setEditingQuestion] = useState(null);
 
   useEffect(() => {
     loadQuestions();
+    loadCategories();
   }, []);
 
   const loadQuestions = async () => {
@@ -19,65 +21,63 @@ function DatabaseManager() {
       setQuestions(fetchedQuestions);
       setError(null);
     } catch (err) {
-      console.error('Error loading questions:', err);
       setError(`Failed to load questions: ${err.message}`);
+      console.error('Error details:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const fetchedCategories = await fetchCategories();
+      setCategories(fetchedCategories);
+    } catch (err) {
+      console.error('Error loading categories:', err);
     }
   };
 
   const handleCreateQuestion = async (e) => {
     e.preventDefault();
     try {
-      setError(null);
-      setLoading(true);
-      await createQuestion(newQuestion.text, newQuestion.category);
-      setNewQuestion({ text: '', category: '' });
-      await loadQuestions();
+      await createQuestion(newQuestion.text, newQuestion.categories);
+      setNewQuestion({ text: '', categories: [] });
+      loadQuestions();
     } catch (err) {
-      console.error('Error creating question:', err);
       setError(`Failed to create question: ${err.message}`);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleUpdateQuestion = async (e) => {
     e.preventDefault();
     try {
-      setError(null);
-      setLoading(true);
-      await updateQuestion(editingQuestion.id, editingQuestion.text, editingQuestion.category);
+      await updateQuestion(editingQuestion.id, editingQuestion.text, editingQuestion.categories);
       setEditingQuestion(null);
-      await loadQuestions();
+      loadQuestions();
     } catch (err) {
-      console.error('Error updating question:', err);
       setError(`Failed to update question: ${err.message}`);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleDeleteQuestion = async (id) => {
     try {
-      setError(null);
-      setLoading(true);
       await deleteQuestion(id);
-      await loadQuestions();
+      loadQuestions();
     } catch (err) {
-      console.error('Error deleting question:', err);
       setError(`Failed to delete question: ${err.message}`);
-    } finally {
-      setLoading(false);
     }
   };
 
-  if (loading) return <div className="loading">Loading questions...</div>;
-  if (error) return <div className="error">{error}</div>;
+  const handleCategoryChange = (e, questionSetter) => {
+    const selectedCategories = Array.from(e.target.selectedOptions, option => option.value);
+    questionSetter(prev => ({ ...prev, categories: selectedCategories }));
+  };
 
   return (
     <div className="database-manager">
       <h2>Database Manager</h2>
+      {loading && <p>Loading questions...</p>}
+      {error && <p className="error">{error}</p>}
       
       <h3>Create New Question</h3>
       <form onSubmit={handleCreateQuestion}>
@@ -88,13 +88,15 @@ function DatabaseManager() {
           placeholder="Question text"
           required
         />
-        <input
-          type="text"
-          value={newQuestion.category}
-          onChange={(e) => setNewQuestion({ ...newQuestion, category: e.target.value })}
-          placeholder="Category"
-          required
-        />
+        <select
+          multiple
+          value={newQuestion.categories}
+          onChange={(e) => handleCategoryChange(e, setNewQuestion)}
+        >
+          {categories.map(category => (
+            <option key={category.id} value={category.id}>{category.name}</option>
+          ))}
+        </select>
         <button type="submit">Create Question</button>
       </form>
 
@@ -112,18 +114,22 @@ function DatabaseManager() {
                   onChange={(e) => setEditingQuestion({ ...editingQuestion, text: e.target.value })}
                   required
                 />
-                <input
-                  type="text"
-                  value={editingQuestion.category}
-                  onChange={(e) => setEditingQuestion({ ...editingQuestion, category: e.target.value })}
-                  required
-                />
+                <select
+                  multiple
+                  value={editingQuestion.categories}
+                  onChange={(e) => handleCategoryChange(e, setEditingQuestion)}
+                >
+                  {categories.map(category => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  ))}
+                </select>
                 <button type="submit">Save</button>
                 <button type="button" onClick={() => setEditingQuestion(null)}>Cancel</button>
               </form>
             ) : (
               <>
-                <p>{question.text} (Category: {question.category})</p>
+                <p>{question.text}</p>
+                <p>Categories: {question.categories.map(cat => categories.find(c => c.id === cat)?.name).join(', ')}</p>
                 <button onClick={() => setEditingQuestion(question)}>Edit</button>
                 <button onClick={() => handleDeleteQuestion(question.id)}>Delete</button>
               </>
