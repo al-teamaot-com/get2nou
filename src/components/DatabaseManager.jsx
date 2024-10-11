@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import Select from 'react-select';
-import { fetchQuestions, fetchCategories, createQuestion, updateQuestion, deleteQuestion } from '../services/api';
+import { fetchQuestions, createQuestion, updateQuestion, deleteQuestion } from '../services/api';
 
 function DatabaseManager() {
   const [questions, setQuestions] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [newQuestion, setNewQuestion] = useState({ text: '', categories: [] });
+  const [newQuestion, setNewQuestion] = useState({ text: '', category: '' });
   const [editingQuestion, setEditingQuestion] = useState(null);
 
   useEffect(() => {
     loadQuestions();
-    loadCategories();
   }, []);
 
   const loadQuestions = async () => {
@@ -29,20 +26,11 @@ function DatabaseManager() {
     }
   };
 
-  const loadCategories = async () => {
-    try {
-      const fetchedCategories = await fetchCategories();
-      setCategories(fetchedCategories.map(cat => ({ value: cat.id, label: cat.name })));
-    } catch (err) {
-      setError(`Failed to load categories: ${err.message}`);
-    }
-  };
-
   const handleCreateQuestion = async (e) => {
     e.preventDefault();
     try {
-      await createQuestion(newQuestion.text, newQuestion.categories.map(cat => cat.value));
-      setNewQuestion({ text: '', categories: [] });
+      await createQuestion(newQuestion.text, newQuestion.category);
+      setNewQuestion({ text: '', category: '' });
       loadQuestions();
     } catch (err) {
       setError(`Failed to create question: ${err.message}`);
@@ -52,7 +40,7 @@ function DatabaseManager() {
   const handleUpdateQuestion = async (e) => {
     e.preventDefault();
     try {
-      await updateQuestion(editingQuestion.id, editingQuestion.text, editingQuestion.categories.map(cat => cat.value));
+      await updateQuestion(editingQuestion.id, editingQuestion.text, editingQuestion.category);
       setEditingQuestion(null);
       loadQuestions();
     } catch (err) {
@@ -84,12 +72,12 @@ function DatabaseManager() {
           placeholder="Question text"
           required
         />
-        <Select
-          isMulti
-          options={categories}
-          value={newQuestion.categories}
-          onChange={(selectedOptions) => setNewQuestion({ ...newQuestion, categories: selectedOptions })}
-          placeholder="Select categories"
+        <input
+          type="text"
+          value={newQuestion.category}
+          onChange={(e) => setNewQuestion({ ...newQuestion, category: e.target.value })}
+          placeholder="Category"
+          required
         />
         <button type="submit">Create Question</button>
       </form>
@@ -108,20 +96,19 @@ function DatabaseManager() {
                   onChange={(e) => setEditingQuestion({ ...editingQuestion, text: e.target.value })}
                   required
                 />
-                <Select
-                  isMulti
-                  options={categories}
-                  value={editingQuestion.categories.map(cat => ({ value: cat.id, label: cat.name }))}
-                  onChange={(selectedOptions) => setEditingQuestion({ ...editingQuestion, categories: selectedOptions })}
+                <input
+                  type="text"
+                  value={editingQuestion.category}
+                  onChange={(e) => setEditingQuestion({ ...editingQuestion, category: e.target.value })}
+                  required
                 />
                 <button type="submit">Save</button>
                 <button type="button" onClick={() => setEditingQuestion(null)}>Cancel</button>
               </form>
             ) : (
               <>
-                <p>{question.text}</p>
-                <p>Categories: {question.categories.map(cat => cat.name).join(', ')}</p>
-                <button onClick={() => setEditingQuestion({...question, categories: question.categories.map(cat => ({ value: cat.id, label: cat.name }))})}>Edit</button>
+                <p>{question.text} (Category: {question.category})</p>
+                <button onClick={() => setEditingQuestion(question)}>Edit</button>
                 <button onClick={() => handleDeleteQuestion(question.id)}>Delete</button>
               </>
             )}
