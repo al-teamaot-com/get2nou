@@ -13,13 +13,13 @@ export const fetchQuestions = async () => {
   return handleResponse(response);
 };
 
-export const submitAnswer = async (sessionId, userId, questionId, answer, handle) => {
+export const submitAnswer = async (sessionId, userId, questionId, answer) => {
   const response = await fetch(`${API_BASE_URL}/answers`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ sessionId, userId, questionId, answer, handle }),
+    body: JSON.stringify({ sessionId, userId, questionId, answer }),
   });
   return handleResponse(response);
 };
