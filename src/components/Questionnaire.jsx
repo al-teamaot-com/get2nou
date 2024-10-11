@@ -36,20 +36,22 @@ function Questionnaire() {
     const currentQuestion = questions[currentQuestionIndex];
     setAnswers({ ...answers, [currentQuestion.id]: answer });
 
-    try {
-      await submitAnswer(sessionId, userId, currentQuestion.id, answer);
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-      } else {
-        setShowShareOptions(true);
-      }
-    } catch (err) {
-      setError(`Failed to submit answer. Please check your internet connection and try again. (Error: ${err.message})`);
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    } else {
+      setShowShareOptions(true);
     }
   };
 
-  const handleSubmit = () => {
-    navigate(`/results/${sessionId}`);
+  const handleSubmit = async () => {
+    try {
+      for (const [questionId, answer] of Object.entries(answers)) {
+        await submitAnswer(sessionId, userId, questionId, answer);
+      }
+      navigate(`/results/${sessionId}`);
+    } catch (err) {
+      setError(`Failed to submit answers. Please check your internet connection and try again. (Error: ${err.message})`);
+    }
   };
 
   const handlePrevious = () => {
