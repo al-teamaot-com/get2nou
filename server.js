@@ -20,6 +20,15 @@ const pool = new pg.Pool({
 });
 
 app.use(express.json());
+
+// Middleware to set no-cache headers
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
+
 app.use(express.static(join(__dirname, 'dist')));
 
 // API routes
