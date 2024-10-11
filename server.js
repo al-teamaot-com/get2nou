@@ -52,12 +52,12 @@ app.get('/api/questions', async (req, res) => {
 });
 
 app.post('/api/answers', async (req, res) => {
-  const { sessionId, userId, questionId, answer } = req.body;
+  const { sessionId, userId, questionId, answer, userHandle } = req.body;
   try {
     const client = await pool.connect();
     await client.query(
-      'INSERT INTO answers (session_id, user_id, question_id, answer) VALUES ($1, $2, $3, $4)',
-      [sessionId, userId, questionId, answer]
+      'INSERT INTO answers (session_id, user_id, question_id, answer, user_handle) VALUES ($1, $2, $3, $4, $5)',
+      [sessionId, userId, questionId, answer, userHandle]
     );
     client.release();
     res.json({ success: true });
@@ -72,7 +72,7 @@ app.get('/api/results/:sessionId', async (req, res) => {
   try {
     const client = await pool.connect();
     const result = await client.query(
-      'SELECT question_id, user_id, answer FROM answers WHERE session_id = $1',
+      'SELECT question_id, user_id, answer, user_handle FROM answers WHERE session_id = $1',
       [sessionId]
     );
     client.release();
@@ -81,7 +81,7 @@ app.get('/api/results/:sessionId', async (req, res) => {
       if (!acc[row.question_id]) {
         acc[row.question_id] = {};
       }
-      acc[row.question_id][row.user_id] = row.answer;
+      acc[row.question_id][row.user_id] = { answer: row.answer, userHandle: row.user_handle };
       return acc;
     }, {});
     
