@@ -11,8 +11,6 @@ function Questionnaire() {
   const [error, setError] = useState(null);
   const [showShareOptions, setShowShareOptions] = useState(false);
   const [userId, setUserId] = useState('');
-  const [userHandle, setUserHandle] = useState('');
-  const [showHandleInput, setShowHandleInput] = useState(true);
   const { sessionId } = useParams();
   const navigate = useNavigate();
 
@@ -39,7 +37,7 @@ function Questionnaire() {
     setAnswers({ ...answers, [currentQuestion.id]: answer });
 
     try {
-      await submitAnswer(sessionId, userId, currentQuestion.id, answer, userHandle);
+      await submitAnswer(sessionId, userId, currentQuestion.id, answer);
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       } else {
@@ -54,13 +52,6 @@ function Questionnaire() {
     navigate(`/results/${sessionId}`);
   };
 
-  const handleHandleSubmit = (e) => {
-    e.preventDefault();
-    if (userHandle.trim()) {
-      setShowHandleInput(false);
-    }
-  };
-
   if (isLoading) return <div className="loading">Loading questions...</div>;
   if (error) return <div className="error">{error}</div>;
   if (questions.length === 0) return <div className="error">No questions available. Please try refreshing the page.</div>;
@@ -69,30 +60,11 @@ function Questionnaire() {
     return <ShareSession sessionId={sessionId} onSubmit={handleSubmit} />;
   }
 
-  if (showHandleInput) {
-    return (
-      <div>
-        <h2>Enter your handle</h2>
-        <form onSubmit={handleHandleSubmit}>
-          <input
-            type="text"
-            value={userHandle}
-            onChange={(e) => setUserHandle(e.target.value)}
-            placeholder="Enter your handle"
-            required
-          />
-          <button type="submit">Start</button>
-        </form>
-      </div>
-    );
-  }
-
   const currentQuestion = questions[currentQuestionIndex];
-  const personalizedQuestion = userHandle ? `${userHandle}, ${currentQuestion.text}` : currentQuestion.text;
 
   return (
     <div>
-      <h2>{personalizedQuestion}</h2>
+      <h2>{currentQuestion.text}</h2>
       <div className="answer-buttons">
         {[1, 2, 3, 4, 5].map((value) => (
           <button
