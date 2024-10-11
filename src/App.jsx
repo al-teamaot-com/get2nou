@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import Home from './components/Home';
 import Questionnaire from './components/Questionnaire';
 import Results from './components/Results';
@@ -11,6 +11,12 @@ function App() {
   return (
     <Router>
       <div className="container">
+        <nav>
+          <ul>
+            <li><Link to="/">Home</Link></li>
+            <li><Link to="/database">Database Manager</Link></li>
+          </ul>
+        </nav>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/questionnaire/:sessionId" element={<Questionnaire />} />
