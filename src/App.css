@@ -63,24 +63,27 @@ input[type="text"] {
   position: relative;
   overflow: hidden;
   min-height: 300px;
-  padding: 0 10px; /* Add horizontal padding */
+  padding: 0 10px;
 }
 
 .question-container {
   width: 100%;
-  max-width: 600px; /* Limit the maximum width */
-  margin: 0 auto; /* Center the container */
+  max-width: 600px;
+  margin: 0 auto;
+  position: absolute;
+  left: 0;
+  right: 0;
 }
 
 .answer-buttons {
   display: flex;
   justify-content: space-between;
   margin: 20px 0;
-  flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+  flex-wrap: wrap;
 }
 
 .answer-buttons button {
-  flex: 1 0 18%; /* Allow buttons to grow and shrink, but maintain a minimum width */
+  flex: 1 0 18%;
   margin: 5px;
   padding: 15px 10px;
   font-size: 18px;
@@ -88,7 +91,7 @@ input[type="text"] {
   background-color: #fff;
   color: #3498db;
   transition: all 0.3s;
-  min-width: 60px; /* Set a minimum width for buttons */
+  min-width: 60px;
 }
 
 .answer-buttons button:hover {
@@ -106,6 +109,29 @@ input[type="text"] {
   display: flex;
   justify-content: space-between;
   margin-top: 20px;
+}
+
+/* Animation styles */
+.fade-enter {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transform: translateX(0%);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.fade-exit {
+  opacity: 1;
+  transform: translateX(0%);
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transform: translateX(-100%);
+  transition: opacity 300ms, transform 300ms;
 }
 
 /* Results styles */
@@ -155,6 +181,6 @@ input[type="text"] {
 /* Responsive design */
 @media (max-width: 600px) {
   .answer-buttons button {
-    flex: 1 0 40%; /* Make buttons larger on smaller screens */
+    flex: 1 0 40%;
   }
 }
