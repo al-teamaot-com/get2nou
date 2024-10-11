@@ -22,68 +22,55 @@ const pool = new pg.Pool({
 app.use(express.json());
 app.use(express.static(join(__dirname, 'dist')));
 
-// Improved error logging middleware
-app.use((err, req, res, next) => {
-  console.error('Error details:', err);
-  res.status(500).json({ error: 'Internal server error', details: err.message });
-});
-
 // API routes
-app.post('/api/sessions', async (req, res, next) => {
+app.post('/api/sessions', async (req, res) => {
   const { sessionId, userId } = req.body;
   try {
     const client = await pool.connect();
-    console.log(`Creating/joining session: ${sessionId} for user: ${userId}`);
     const result = await client.query(
       'INSERT INTO sessions (id, users) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET users = array_append(sessions.users, $3) WHERE NOT $3 = ANY(sessions.users) RETURNING *',
       [sessionId, [userId], userId]
     );
     client.release();
-    console.log('Session created/joined successfully');
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Error creating or joining session:', err);
-    next(err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.get('/api/questions', async (req, res, next) => {
+app.get('/api/questions', async (req, res) => {
   try {
     const client = await pool.connect();
-    console.log('Fetching questions');
     const result = await client.query('SELECT * FROM questions');
     client.release();
-    console.log(`Fetched ${result.rows.length} questions`);
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching questions:', err);
-    next(err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.post('/api/answers', async (req, res, next) => {
+app.post('/api/answers', async (req, res) => {
   const { sessionId, userId, questionId, answer } = req.body;
   try {
     const client = await pool.connect();
-    console.log(`Submitting answer: Session ${sessionId}, User ${userId}, Question ${questionId}, Answer ${answer}`);
     await client.query(
       'INSERT INTO answers (session_id, user_id, question_id, answer) VALUES ($1, $2, $3, $4)',
       [sessionId, userId, questionId, answer]
     );
     client.release();
-    console.log('Answer submitted successfully');
     res.json({ success: true });
   } catch (err) {
     console.error('Error submitting answer:', err);
-    next(err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.get('/api/results/:sessionId', async (req, res, next) => {
+app.get('/api/results/:sessionId', async (req, res) => {
   const { sessionId } = req.params;
   try {
     const client = await pool.connect();
-    console.log(`Fetching results for session: ${sessionId}`);
     const result = await client.query(
       'SELECT question_id, user_id, answer FROM answers WHERE session_id = $1',
       [sessionId]
@@ -98,11 +85,65 @@ app.get('/api/results/:sessionId', async (req, res, next) => {
       return acc;
     }, {});
     
-    console.log(`Fetched results for ${Object.keys(results).length} questions`);
     res.json(results);
   } catch (err) {
     console.error('Error fetching results:', err);
-    next(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// New routes for managing questions
+app.post('/api/questions', async (req, res) => {
+  const { text, category } = req.body;
+  try {
+    const client = await pool.connect();
+    const result = await client.query(
+      'INSERT INTO questions (text, category) VALUES ($1, $2) RETURNING *',
+      [text, category]
+    );
+    client.release();
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating question:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/api/questions/:id', async (req, res) => {
+  const { id } = req.params;
+  const { text, category } = req.body;
+  try {
+    const client = await pool.connect();
+    const result = await client.query(
+      'UPDATE questions SET text = $1, category = $2 WHERE id = $3 RETURNING *',
+      [text, category, id]
+    );
+    client.release();
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Question not found' });
+    } else {
+      res.json(result.rows[0]);
+    }
+  } catch (err) {
+    console.error('Error updating question:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.delete('/api/questions/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const client = await pool.connect();
+    const result = await client.query('DELETE FROM questions WHERE id = $1 RETURNING *', [id]);
+    client.release();
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Question not found' });
+    } else {
+      res.json({ success: true });
+    }
+  } catch (err) {
+    console.error('Error deleting question:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
