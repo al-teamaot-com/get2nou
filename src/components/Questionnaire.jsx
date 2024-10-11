@@ -78,10 +78,6 @@ function Questionnaire() {
             key={value}
             onClick={() => handleAnswer(value)}
             className={answers[currentQuestion.id] === value ? 'selected' : ''}
-            style={{
-              backgroundColor: answers[currentQuestion.id] === value ? '#4CAF50' : '',
-              color: answers[currentQuestion.id] === value ? 'white' : '',
-            }}
           >
             {value}
           </button>
