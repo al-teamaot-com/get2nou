@@ -59,6 +59,16 @@ input[type="text"] {
 }
 
 /* Questionnaire styles */
+.questionnaire {
+  position: relative;
+  overflow: hidden;
+}
+
+.question-container {
+  position: absolute;
+  width: 100%;
+}
+
 .answer-buttons {
   display: flex;
   justify-content: space-between;
@@ -135,4 +145,27 @@ input[type="text"] {
   text-align: center;
   font-style: italic;
   margin: 20px 0;
+}
+
+/* Animation styles */
+.fade-enter {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transform: translateX(0%);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.fade-exit {
+  opacity: 1;
+  transform: translateX(0%);
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transform: translateX(-100%);
+  transition: opacity 300ms, transform 300ms;
 }
