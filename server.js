@@ -143,7 +143,15 @@ app.delete('/api/questions/:id', async (req, res) => {
   const { id } = req.params;
   try {
     const client = await pool.connect();
+    await client.query('BEGIN');
+    
+    // First, delete any entries in the question_categories table
+    await client.query('DELETE FROM question_categories WHERE question_id = $1', [id]);
+    
+    // Then, delete the question
     await client.query('DELETE FROM questions WHERE id = $1', [id]);
+    
+    await client.query('COMMIT');
     client.release();
     res.json({ success: true });
   } catch (err) {
