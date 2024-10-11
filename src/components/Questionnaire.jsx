@@ -5,12 +5,13 @@ import ShareSession from './ShareSession';
 
 function Questionnaire() {
   const [questions, setQuestions] = useState([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1);
   const [answers, setAnswers] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showShareOptions, setShowShareOptions] = useState(false);
   const [userId, setUserId] = useState('');
+  const [handle, setHandle] = useState('');
   const { sessionId } = useParams();
   const navigate = useNavigate();
 
@@ -32,12 +33,18 @@ function Questionnaire() {
     initSession();
   }, [sessionId]);
 
+  const handleSubmitHandle = () => {
+    if (handle.trim()) {
+      setCurrentQuestionIndex(0);
+    }
+  };
+
   const handleAnswer = async (answer) => {
     const currentQuestion = questions[currentQuestionIndex];
     setAnswers({ ...answers, [currentQuestion.id]: answer });
 
     try {
-      await submitAnswer(sessionId, userId, currentQuestion.id, answer);
+      await submitAnswer(sessionId, userId, currentQuestion.id, answer, handle);
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       } else {
@@ -56,6 +63,21 @@ function Questionnaire() {
   if (error) return <div className="error">{error}</div>;
   if (questions.length === 0) return <div className="error">No questions available. Please try refreshing the page.</div>;
 
+  if (currentQuestionIndex === -1) {
+    return (
+      <div>
+        <h2>Enter your handle</h2>
+        <input
+          type="text"
+          value={handle}
+          onChange={(e) => setHandle(e.target.value)}
+          placeholder="Enter your handle"
+        />
+        <button onClick={handleSubmitHandle} disabled={!handle.trim()}>Start</button>
+      </div>
+    );
+  }
+
   if (showShareOptions) {
     return <ShareSession sessionId={sessionId} onSubmit={handleSubmit} />;
   }
@@ -64,7 +86,7 @@ function Questionnaire() {
 
   return (
     <div>
-      <h2>{currentQuestion.text}</h2>
+      <h2>{handle}, {currentQuestion.text}</h2>
       <div className="answer-buttons">
         {[1, 2, 3, 4, 5].map((value) => (
           <button
