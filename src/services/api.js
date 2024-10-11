@@ -45,24 +45,24 @@ export const createOrJoinSession = async (sessionId, userId) => {
   return handleResponse(response);
 };
 
-export const createQuestion = async (text, category) => {
+export const createQuestion = async (text, categories) => {
   const response = await fetch(`${API_BASE_URL}/questions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ text, category }),
+    body: JSON.stringify({ text, categories }),
   });
   return handleResponse(response);
 };
 
-export const updateQuestion = async (id, text, category) => {
+export const updateQuestion = async (id, text, categories) => {
   const response = await fetch(`${API_BASE_URL}/questions/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ text, category }),
+    body: JSON.stringify({ text, categories }),
   });
   return handleResponse(response);
 };
@@ -72,23 +72,4 @@ export const deleteQuestion = async (id) => {
     method: 'DELETE',
   });
   return handleResponse(response);
-};
-
-// These functions are not implemented on the server side yet
-export const createCategory = async (name) => {
-  // Placeholder implementation
-  console.log('Creating category:', name);
-  return { id: Date.now(), name };
-};
-
-export const updateCategory = async (id, name) => {
-  // Placeholder implementation
-  console.log('Updating category:', id, name);
-  return { id, name };
-};
-
-export const deleteCategory = async (id) => {
-  // Placeholder implementation
-  console.log('Deleting category:', id);
-  return { success: true };
 };
