@@ -5,13 +5,12 @@ import ShareSession from './ShareSession';
 
 function Questionnaire() {
   const [questions, setQuestions] = useState([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showShareOptions, setShowShareOptions] = useState(false);
   const [userId, setUserId] = useState('');
-  const [handle, setHandle] = useState('');
   const { sessionId } = useParams();
   const navigate = useNavigate();
 
@@ -33,18 +32,13 @@ function Questionnaire() {
     initSession();
   }, [sessionId]);
 
-  const handleSubmitHandle = () => {
-    if (handle.trim()) {
-      setCurrentQuestionIndex(0);
-    }
-  };
-
   const handleAnswer = async (answer) => {
     const currentQuestion = questions[currentQuestionIndex];
-    setAnswers({ ...answers, [currentQuestion.id]: answer });
+    const newAnswers = { ...answers, [currentQuestion.id]: answer };
+    setAnswers(newAnswers);
 
     try {
-      await submitAnswer(sessionId, userId, currentQuestion.id, answer, handle);
+      await submitAnswer(sessionId, userId, currentQuestion.id, answer);
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       } else {
@@ -52,6 +46,12 @@ function Questionnaire() {
       }
     } catch (err) {
       setError(`Failed to submit answer. Please check your internet connection and try again. (Error: ${err.message})`);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
   };
 
@@ -63,21 +63,6 @@ function Questionnaire() {
   if (error) return <div className="error">{error}</div>;
   if (questions.length === 0) return <div className="error">No questions available. Please try refreshing the page.</div>;
 
-  if (currentQuestionIndex === -1) {
-    return (
-      <div>
-        <h2>Enter your handle</h2>
-        <input
-          type="text"
-          value={handle}
-          onChange={(e) => setHandle(e.target.value)}
-          placeholder="Enter your handle"
-        />
-        <button onClick={handleSubmitHandle} disabled={!handle.trim()}>Start</button>
-      </div>
-    );
-  }
-
   if (showShareOptions) {
     return <ShareSession sessionId={sessionId} onSubmit={handleSubmit} />;
   }
@@ -86,13 +71,17 @@ function Questionnaire() {
 
   return (
     <div>
-      <h2>{handle}, {currentQuestion.text}</h2>
+      <h2>{currentQuestion.text}</h2>
       <div className="answer-buttons">
         {[1, 2, 3, 4, 5].map((value) => (
           <button
             key={value}
             onClick={() => handleAnswer(value)}
             className={answers[currentQuestion.id] === value ? 'selected' : ''}
+            style={{
+              backgroundColor: answers[currentQuestion.id] === value ? '#4CAF50' : '',
+              color: answers[currentQuestion.id] === value ? 'white' : '',
+            }}
           >
             {value}
           </button>
@@ -102,6 +91,14 @@ function Questionnaire() {
       <p>
         Question {currentQuestionIndex + 1} of {questions.length}
       </p>
+      <div className="navigation-buttons">
+        <button onClick={handlePrevious} disabled={currentQuestionIndex === 0}>
+          Previous
+        </button>
+        {currentQuestionIndex === questions.length - 1 && (
+          <button onClick={() => setShowShareOptions(true)}>Finish</button>
+        )}
+      </div>
     </div>
   );
 }
