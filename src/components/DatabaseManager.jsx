@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { fetchQuestions, fetchCategories, createQuestion, updateQuestion, deleteQuestion } from '../services/api';
-import Select from 'react-select';
 
 function DatabaseManager() {
   const [questions, setQuestions] = useState([]);
@@ -23,7 +22,6 @@ function DatabaseManager() {
       setError(null);
     } catch (err) {
       setError(`Failed to load questions: ${err.message}`);
-      console.error('Error details:', err);
     } finally {
       setLoading(false);
     }
@@ -32,7 +30,7 @@ function DatabaseManager() {
   const loadCategories = async () => {
     try {
       const fetchedCategories = await fetchCategories();
-      setCategories(fetchedCategories.map(cat => ({ value: cat.name, label: cat.name })));
+      setCategories(fetchedCategories);
     } catch (err) {
       setError(`Failed to load categories: ${err.message}`);
     }
@@ -41,7 +39,7 @@ function DatabaseManager() {
   const handleCreateQuestion = async (e) => {
     e.preventDefault();
     try {
-      await createQuestion(newQuestion.text, newQuestion.categories.map(c => c.value));
+      await createQuestion(newQuestion.text, newQuestion.categories);
       setNewQuestion({ text: '', categories: [] });
       loadQuestions();
     } catch (err) {
@@ -52,7 +50,7 @@ function DatabaseManager() {
   const handleUpdateQuestion = async (e) => {
     e.preventDefault();
     try {
-      await updateQuestion(editingQuestion.id, editingQuestion.text, editingQuestion.categories.map(c => c.value));
+      await updateQuestion(editingQuestion.id, editingQuestion.text, editingQuestion.categories);
       setEditingQuestion(null);
       loadQuestions();
     } catch (err) {
@@ -84,13 +82,15 @@ function DatabaseManager() {
           placeholder="Question text"
           required
         />
-        <Select
-          isMulti
-          options={categories}
+        <select
+          multiple
           value={newQuestion.categories}
-          onChange={(selectedOptions) => setNewQuestion({ ...newQuestion, categories: selectedOptions })}
-          placeholder="Select categories"
-        />
+          onChange={(e) => setNewQuestion({ ...newQuestion, categories: Array.from(e.target.selectedOptions, option => option.value) })}
+        >
+          {categories.map(category => (
+            <option key={category.id} value={category.name}>{category.name}</option>
+          ))}
+        </select>
         <button type="submit">Create Question</button>
       </form>
 
@@ -108,13 +108,15 @@ function DatabaseManager() {
                   onChange={(e) => setEditingQuestion({ ...editingQuestion, text: e.target.value })}
                   required
                 />
-                <Select
-                  isMulti
-                  options={categories}
-                  value={editingQuestion.categories.map(c => ({ value: c, label: c }))}
-                  onChange={(selectedOptions) => setEditingQuestion({ ...editingQuestion, categories: selectedOptions.map(o => o.value) })}
-                  placeholder="Select categories"
-                />
+                <select
+                  multiple
+                  value={editingQuestion.categories}
+                  onChange={(e) => setEditingQuestion({ ...editingQuestion, categories: Array.from(e.target.selectedOptions, option => option.value) })}
+                >
+                  {categories.map(category => (
+                    <option key={category.id} value={category.name}>{category.name}</option>
+                  ))}
+                </select>
                 <button type="submit">Save</button>
                 <button type="button" onClick={() => setEditingQuestion(null)}>Cancel</button>
               </form>
