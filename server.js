@@ -52,12 +52,12 @@ app.get('/api/questions', async (req, res) => {
 });
 
 app.post('/api/answers', async (req, res) => {
-  const { sessionId, userId, questionId, answer } = req.body;
+  const { sessionId, userId, questionId, answer, handle } = req.body;
   try {
     const client = await pool.connect();
     await client.query(
-      'INSERT INTO answers (session_id, user_id, question_id, answer) VALUES ($1, $2, $3, $4)',
-      [sessionId, userId, questionId, answer]
+      'INSERT INTO answers (session_id, user_id, question_id, answer, handle) VALUES ($1, $2, $3, $4, $5)',
+      [sessionId, userId, questionId, answer, handle]
     );
     client.release();
     res.json({ success: true });
@@ -72,7 +72,7 @@ app.get('/api/results/:sessionId', async (req, res) => {
   try {
     const client = await pool.connect();
     const result = await client.query(
-      'SELECT question_id, user_id, answer FROM answers WHERE session_id = $1',
+      'SELECT question_id, user_id, answer, handle FROM answers WHERE session_id = $1',
       [sessionId]
     );
     client.release();
@@ -81,13 +81,67 @@ app.get('/api/results/:sessionId', async (req, res) => {
       if (!acc[row.question_id]) {
         acc[row.question_id] = {};
       }
-      acc[row.question_id][row.user_id] = row.answer;
+      acc[row.question_id][row.user_id] = { answer: row.answer, userHandle: row.handle };
       return acc;
     }, {});
     
     res.json(results);
   } catch (err) {
     console.error('Error fetching results:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/questions', async (req, res) => {
+  const { text, category } = req.body;
+  try {
+    const client = await pool.connect();
+    const result = await client.query(
+      'INSERT INTO questions (text, category) VALUES ($1, $2) RETURNING *',
+      [text, category]
+    );
+    client.release();
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating question:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/api/questions/:id', async (req, res) => {
+  const { id } = req.params;
+  const { text, category } = req.body;
+  try {
+    const client = await pool.connect();
+    const result = await client.query(
+      'UPDATE questions SET text = $1, category = $2 WHERE id = $3 RETURNING *',
+      [text, category, id]
+    );
+    client.release();
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Question not found' });
+    } else {
+      res.json(result.rows[0]);
+    }
+  } catch (err) {
+    console.error('Error updating question:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.delete('/api/questions/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const client = await pool.connect();
+    const result = await client.query('DELETE FROM questions WHERE id = $1 RETURNING *', [id]);
+    client.release();
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Question not found' });
+    } else {
+      res.json({ success: true });
+    }
+  } catch (err) {
+    console.error('Error deleting question:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
