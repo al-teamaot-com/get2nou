@@ -56,7 +56,10 @@ app.post('/api/answers', async (req, res) => {
   try {
     const client = await pool.connect();
     await client.query(
-      'INSERT INTO answers (session_id, user_id, question_id, answer) VALUES ($1, $2, $3, $4)',
+      `INSERT INTO answers (session_id, user_id, question_id, answer)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (session_id, user_id, question_id)
+       DO UPDATE SET answer = $4`,
       [sessionId, userId, questionId, answer]
     );
     client.release();
@@ -92,7 +95,6 @@ app.get('/api/results/:sessionId', async (req, res) => {
   }
 });
 
-// New category-related endpoints
 app.get('/api/categories', async (req, res) => {
   try {
     const client = await pool.connect();
@@ -145,8 +147,8 @@ app.delete('/api/questions/:id', async (req, res) => {
     const client = await pool.connect();
     await client.query('BEGIN');
     
-    // First, delete any entries in the question_categories table
-    await client.query('DELETE FROM question_categories WHERE question_id = $1', [id]);
+    // First, delete any entries in the answers table
+    await client.query('DELETE FROM answers WHERE question_id = $1', [id]);
     
     // Then, delete the question
     await client.query('DELETE FROM questions WHERE id = $1', [id]);
