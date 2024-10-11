@@ -2,8 +2,8 @@ const API_BASE_URL = '/api';
 
 const handleResponse = async (response) => {
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`${response.status}: ${errorText}`);
+    const errorData = await response.json();
+    throw new Error(errorData.error || `${response.status}: ${response.statusText}`);
   }
   return response.json();
 };
@@ -69,7 +69,6 @@ export const deleteQuestion = async (id) => {
   return handleResponse(response);
 };
 
-// New category-related functions
 export const fetchCategories = async () => {
   const response = await fetch(`${API_BASE_URL}/categories`);
   return handleResponse(response);
