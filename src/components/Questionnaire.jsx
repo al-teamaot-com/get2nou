@@ -11,6 +11,8 @@ function Questionnaire() {
   const [error, setError] = useState(null);
   const [showShareOptions, setShowShareOptions] = useState(false);
   const [userId, setUserId] = useState('');
+  const [userHandle, setUserHandle] = useState('');
+  const [showHandleInput, setShowHandleInput] = useState(true);
   const { sessionId } = useParams();
   const navigate = useNavigate();
 
@@ -23,7 +25,6 @@ function Questionnaire() {
         const fetchedQuestions = await fetchQuestions();
         setQuestions(fetchedQuestions);
       } catch (err) {
-        console.error('Error initializing session:', err);
         setError(`Unable to connect to the server. Please check your internet connection and try again. (Error: ${err.message})`);
       } finally {
         setIsLoading(false);
@@ -38,21 +39,26 @@ function Questionnaire() {
     setAnswers({ ...answers, [currentQuestion.id]: answer });
 
     try {
-      console.log(`Submitting answer: ${answer} for question ${currentQuestion.id}`);
-      await submitAnswer(sessionId, userId, currentQuestion.id, answer);
+      await submitAnswer(sessionId, userId, currentQuestion.id, answer, userHandle);
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       } else {
         setShowShareOptions(true);
       }
     } catch (err) {
-      console.error('Error submitting answer:', err);
       setError(`Failed to submit answer. Please check your internet connection and try again. (Error: ${err.message})`);
     }
   };
 
   const handleSubmit = () => {
     navigate(`/results/${sessionId}`);
+  };
+
+  const handleHandleSubmit = (e) => {
+    e.preventDefault();
+    if (userHandle.trim()) {
+      setShowHandleInput(false);
+    }
   };
 
   if (isLoading) return <div className="loading">Loading questions...</div>;
@@ -63,11 +69,30 @@ function Questionnaire() {
     return <ShareSession sessionId={sessionId} onSubmit={handleSubmit} />;
   }
 
+  if (showHandleInput) {
+    return (
+      <div>
+        <h2>Enter your handle</h2>
+        <form onSubmit={handleHandleSubmit}>
+          <input
+            type="text"
+            value={userHandle}
+            onChange={(e) => setUserHandle(e.target.value)}
+            placeholder="Enter your handle"
+            required
+          />
+          <button type="submit">Start</button>
+        </form>
+      </div>
+    );
+  }
+
   const currentQuestion = questions[currentQuestionIndex];
+  const personalizedQuestion = userHandle ? `${userHandle}, ${currentQuestion.text}` : currentQuestion.text;
 
   return (
     <div>
-      <h2>{currentQuestion.text}</h2>
+      <h2>{personalizedQuestion}</h2>
       <div className="answer-buttons">
         {[1, 2, 3, 4, 5].map((value) => (
           <button
