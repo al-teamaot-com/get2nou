@@ -22,7 +22,75 @@ const pool = new pg.Pool({
 app.use(express.json());
 app.use(express.static(join(__dirname, 'dist')));
 
-// Existing routes...
+// API routes
+app.post('/api/sessions', async (req, res) => {
+  const { sessionId, userId } = req.body;
+  try {
+    const client = await pool.connect();
+    const result = await client.query(
+      'INSERT INTO sessions (id, users) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET users = array_append(sessions.users, $3) WHERE NOT $3 = ANY(sessions.users) RETURNING *',
+      [sessionId, [userId], userId]
+    );
+    client.release();
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating or joining session:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/questions', async (req, res) => {
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT * FROM questions');
+    client.release();
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching questions:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/answers', async (req, res) => {
+  const { sessionId, userId, questionId, answer } = req.body;
+  try {
+    const client = await pool.connect();
+    await client.query(
+      'INSERT INTO answers (session_id, user_id, question_id, answer) VALUES ($1, $2, $3, $4)',
+      [sessionId, userId, questionId, answer]
+    );
+    client.release();
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error submitting answer:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/results/:sessionId', async (req, res) => {
+  const { sessionId } = req.params;
+  try {
+    const client = await pool.connect();
+    const result = await client.query(
+      'SELECT question_id, user_id, answer FROM answers WHERE session_id = $1',
+      [sessionId]
+    );
+    client.release();
+    
+    const results = result.rows.reduce((acc, row) => {
+      if (!acc[row.question_id]) {
+        acc[row.question_id] = {};
+      }
+      acc[row.question_id][row.user_id] = row.answer;
+      return acc;
+    }, {});
+    
+    res.json(results);
+  } catch (err) {
+    console.error('Error fetching results:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // New routes for category management
 app.get('/api/categories', async (req, res) => {
