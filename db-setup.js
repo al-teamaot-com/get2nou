@@ -1,4 +1,5 @@
-const { Pool } = require('pg');
+import pg from 'pg';
+const { Pool } = pg;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -8,43 +9,54 @@ const pool = new Pool({
 });
 
 async function setupDatabase() {
-  const client = await pool.connect();
   try {
+    const client = await pool.connect();
+    
+    // Create tables
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id VARCHAR(255) PRIMARY KEY,
+        users TEXT[] NOT NULL
+      )
+    `);
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS questions (
         id SERIAL PRIMARY KEY,
         text TEXT NOT NULL,
-        category TEXT
-      );
+        category VARCHAR(255)
+      )
+    `);
 
-      CREATE TABLE IF NOT EXISTS sessions (
-        id TEXT PRIMARY KEY,
-        users TEXT[] NOT NULL
-      );
-
+    await client.query(`
       CREATE TABLE IF NOT EXISTS answers (
         id SERIAL PRIMARY KEY,
-        session_id TEXT REFERENCES sessions(id),
-        user_id TEXT NOT NULL,
+        session_id VARCHAR(255) REFERENCES sessions(id),
+        user_id VARCHAR(255),
         question_id INTEGER REFERENCES questions(id),
-        answer INTEGER NOT NULL
-      );
+        answer INTEGER,
+        user_handle VARCHAR(255)
+      )
+    `);
 
-      -- Insert some sample questions
+    // Insert sample questions
+    await client.query(`
       INSERT INTO questions (text, category) VALUES
       ('Do you enjoy outdoor activities?', 'Lifestyle'),
       ('Are you a morning person?', 'Lifestyle'),
       ('Do you like to travel?', 'Interests'),
       ('Are you interested in politics?', 'Interests'),
       ('Do you enjoy cooking?', 'Hobbies')
-      ON CONFLICT DO NOTHING;
+      ON CONFLICT DO NOTHING
     `);
+
     console.log('Database setup completed successfully');
+    client.release();
   } catch (err) {
     console.error('Error setting up database:', err);
   } finally {
-    client.release();
+    pool.end();
   }
 }
 
-setupDatabase().then(() => process.exit());
+setupDatabase();
