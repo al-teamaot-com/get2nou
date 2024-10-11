@@ -1,82 +1,25 @@
 /* ... (keep existing styles) ... */
 
-/* Questionnaire styles */
-.questionnaire {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  padding: 20px;
-}
-
-.question-container {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.answer-buttons {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 20px 0;
-}
-
 .answer-buttons button {
   flex: 1 0 18%;
   min-width: 60px;
   padding: 15px 10px;
   font-size: 18px;
   border: 2px solid #3498db;
-  background-color: #fff;
-  color: #3498db;
+  background-color: #3498db;
+  color: #fff;
   transition: all 0.3s;
 }
 
 .answer-buttons button:hover {
-  background-color: #3498db;
-  color: #fff;
+  background-color: #2980b9;
+  border-color: #2980b9;
 }
 
 .answer-buttons button.selected {
   background-color: #2ecc71;
   border-color: #2ecc71;
   color: #fff;
-}
-
-.navigation-buttons {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
-  padding: 10px 0;
-}
-
-/* Animation styles */
-.fade-enter {
-  opacity: 0;
-  transform: translateX(100%);
-}
-
-.fade-enter-active {
-  opacity: 1;
-  transform: translateX(0%);
-  transition: opacity 300ms, transform 300ms;
-}
-
-.fade-exit {
-  opacity: 1;
-  transform: translateX(0%);
-}
-
-.fade-exit-active {
-  opacity: 0;
-  transform: translateX(-100%);
-  transition: opacity 300ms, transform 300ms;
 }
 
 /* ... (keep other styles) ... */
