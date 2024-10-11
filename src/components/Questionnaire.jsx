@@ -36,22 +36,20 @@ function Questionnaire() {
     const currentQuestion = questions[currentQuestionIndex];
     setAnswers({ ...answers, [currentQuestion.id]: answer });
 
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    } else {
-      setShowShareOptions(true);
+    try {
+      await submitAnswer(sessionId, userId, currentQuestion.id, answer);
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(currentQuestionIndex + 1);
+      } else {
+        setShowShareOptions(true);
+      }
+    } catch (err) {
+      setError(`Failed to submit answer. Please check your internet connection and try again. (Error: ${err.message})`);
     }
   };
 
-  const handleSubmit = async () => {
-    try {
-      for (const [questionId, answer] of Object.entries(answers)) {
-        await submitAnswer(sessionId, userId, questionId, answer);
-      }
-      navigate(`/results/${sessionId}`);
-    } catch (err) {
-      setError(`Failed to submit answers. Please check your internet connection and try again. (Error: ${err.message})`);
-    }
+  const handleSubmit = () => {
+    navigate(`/results/${sessionId}`);
   };
 
   const handlePrevious = () => {
@@ -71,7 +69,7 @@ function Questionnaire() {
   const currentQuestion = questions[currentQuestionIndex];
 
   return (
-    <div>
+    <div className="container">
       <h2>{currentQuestion.text}</h2>
       <div className="answer-buttons">
         {[1, 2, 3, 4, 5].map((value) => (
@@ -92,8 +90,10 @@ function Questionnaire() {
         <button onClick={handlePrevious} disabled={currentQuestionIndex === 0}>
           Previous
         </button>
-        {currentQuestionIndex === questions.length - 1 && (
+        {currentQuestionIndex === questions.length - 1 ? (
           <button onClick={() => setShowShareOptions(true)}>Finish</button>
+        ) : (
+          <button onClick={() => handleAnswer(answers[currentQuestion.id] || 0)}>Next</button>
         )}
       </div>
     </div>
