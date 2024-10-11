@@ -43,7 +43,8 @@ app.get('/api/questions', async (req, res) => {
   try {
     const client = await pool.connect();
     const result = await client.query(`
-      SELECT q.id, q.text, ARRAY_AGG(c.name) as categories
+      SELECT q.id, q.text, 
+             COALESCE(json_agg(json_build_object('id', c.id, 'name', c.name)) FILTER (WHERE c.id IS NOT NULL), '[]') as categories
       FROM questions q
       LEFT JOIN question_categories qc ON q.id = qc.question_id
       LEFT JOIN categories c ON qc.category_id = c.id
@@ -111,7 +112,7 @@ app.get('/api/results/:sessionId', async (req, res) => {
 });
 
 app.post('/api/questions', async (req, res) => {
-  const { text, categories } = req.body;
+  const { text, categoryIds } = req.body;
   try {
     const client = await pool.connect();
     await client.query('BEGIN');
@@ -121,23 +122,16 @@ app.post('/api/questions', async (req, res) => {
     );
     const questionId = questionResult.rows[0].id;
 
-    for (const categoryName of categories) {
-      const categoryResult = await client.query(
-        'SELECT id FROM categories WHERE name = $1',
-        [categoryName]
+    for (const categoryId of categoryIds) {
+      await client.query(
+        'INSERT INTO question_categories (question_id, category_id) VALUES ($1, $2)',
+        [questionId, categoryId]
       );
-      if (categoryResult.rows.length > 0) {
-        const categoryId = categoryResult.rows[0].id;
-        await client.query(
-          'INSERT INTO question_categories (question_id, category_id) VALUES ($1, $2)',
-          [questionId, categoryId]
-        );
-      }
     }
 
     await client.query('COMMIT');
     client.release();
-    res.json({ id: questionId, text, categories });
+    res.json({ id: questionId, text, categoryIds });
   } catch (err) {
     console.error('Error creating question:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -146,30 +140,23 @@ app.post('/api/questions', async (req, res) => {
 
 app.put('/api/questions/:id', async (req, res) => {
   const { id } = req.params;
-  const { text, categories } = req.body;
+  const { text, categoryIds } = req.body;
   try {
     const client = await pool.connect();
     await client.query('BEGIN');
     await client.query('UPDATE questions SET text = $1 WHERE id = $2', [text, id]);
     await client.query('DELETE FROM question_categories WHERE question_id = $1', [id]);
 
-    for (const categoryName of categories) {
-      const categoryResult = await client.query(
-        'SELECT id FROM categories WHERE name = $1',
-        [categoryName]
+    for (const categoryId of categoryIds) {
+      await client.query(
+        'INSERT INTO question_categories (question_id, category_id) VALUES ($1, $2)',
+        [id, categoryId]
       );
-      if (categoryResult.rows.length > 0) {
-        const categoryId = categoryResult.rows[0].id;
-        await client.query(
-          'INSERT INTO question_categories (question_id, category_id) VALUES ($1, $2)',
-          [id, categoryId]
-        );
-      }
     }
 
     await client.query('COMMIT');
     client.release();
-    res.json({ id, text, categories });
+    res.json({ id, text, categoryIds });
   } catch (err) {
     console.error('Error updating question:', err);
     res.status(500).json({ error: 'Internal server error' });
