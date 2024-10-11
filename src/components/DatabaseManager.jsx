@@ -6,7 +6,7 @@ function DatabaseManager() {
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [newQuestion, setNewQuestion] = useState({ text: '', category: '' });
+  const [newQuestion, setNewQuestion] = useState({ text: '', categories: [] });
   const [editingQuestion, setEditingQuestion] = useState(null);
 
   useEffect(() => {
@@ -34,8 +34,8 @@ function DatabaseManager() {
   const handleCreateQuestion = async (e) => {
     e.preventDefault();
     try {
-      await createQuestion(newQuestion.text, newQuestion.category);
-      setNewQuestion({ text: '', category: '' });
+      await createQuestion(newQuestion.text, newQuestion.categories);
+      setNewQuestion({ text: '', categories: [] });
       loadData();
     } catch (err) {
       setError(`Failed to create question: ${err.message}`);
@@ -45,7 +45,7 @@ function DatabaseManager() {
   const handleUpdateQuestion = async (e) => {
     e.preventDefault();
     try {
-      await updateQuestion(editingQuestion.id, editingQuestion.text, editingQuestion.category);
+      await updateQuestion(editingQuestion.id, editingQuestion.text, editingQuestion.categories);
       setEditingQuestion(null);
       loadData();
     } catch (err) {
@@ -60,6 +60,13 @@ function DatabaseManager() {
     } catch (err) {
       setError(`Failed to delete question: ${err.message}`);
     }
+  };
+
+  const handleCategoryChange = (category, questionState, setQuestionState) => {
+    const updatedCategories = questionState.categories.includes(category)
+      ? questionState.categories.filter(c => c !== category)
+      : [...questionState.categories, category];
+    setQuestionState({ ...questionState, categories: updatedCategories });
   };
 
   if (loading) return <div className="loading">Loading data...</div>;
@@ -78,16 +85,18 @@ function DatabaseManager() {
           placeholder="Question text"
           required
         />
-        <select
-          value={newQuestion.category}
-          onChange={(e) => setNewQuestion({ ...newQuestion, category: e.target.value })}
-          required
-        >
-          <option value="">Select a category</option>
+        <div className="category-checkboxes">
           {categories.map((category) => (
-            <option key={category} value={category}>{category}</option>
+            <label key={category}>
+              <input
+                type="checkbox"
+                checked={newQuestion.categories.includes(category)}
+                onChange={() => handleCategoryChange(category, newQuestion, setNewQuestion)}
+              />
+              {category}
+            </label>
           ))}
-        </select>
+        </div>
         <button type="submit">Create Question</button>
       </form>
 
@@ -101,22 +110,25 @@ function DatabaseManager() {
                 onChange={(e) => setEditingQuestion({ ...editingQuestion, text: e.target.value })}
                 required
               />
-              <select
-                value={editingQuestion.category}
-                onChange={(e) => setEditingQuestion({ ...editingQuestion, category: e.target.value })}
-                required
-              >
-                <option value="">Select a category</option>
+              <div className="category-checkboxes">
                 {categories.map((category) => (
-                  <option key={category} value={category}>{category}</option>
+                  <label key={category}>
+                    <input
+                      type="checkbox"
+                      checked={editingQuestion.categories.includes(category)}
+                      onChange={() => handleCategoryChange(category, editingQuestion, setEditingQuestion)}
+                    />
+                    {category}
+                  </label>
                 ))}
-              </select>
+              </div>
               <button type="submit">Save</button>
               <button type="button" onClick={() => setEditingQuestion(null)}>Cancel</button>
             </form>
           ) : (
             <>
-              <p>{question.text} (Category: {question.category})</p>
+              <p>{question.text}</p>
+              <p>Categories: {question.categories.join(', ')}</p>
               <button onClick={() => setEditingQuestion(question)}>Edit</button>
               <button onClick={() => handleDeleteQuestion(question.id)}>Delete</button>
             </>
