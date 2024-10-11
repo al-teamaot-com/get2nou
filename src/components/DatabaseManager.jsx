@@ -111,7 +111,7 @@ function DatabaseManager() {
                 <Select
                   isMulti
                   options={categories}
-                  value={editingQuestion.categories}
+                  value={editingQuestion.categories.map(cat => ({ value: cat.id, label: cat.name }))}
                   onChange={(selectedOptions) => setEditingQuestion({ ...editingQuestion, categories: selectedOptions })}
                 />
                 <button type="submit">Save</button>
@@ -121,7 +121,7 @@ function DatabaseManager() {
               <>
                 <p>{question.text}</p>
                 <p>Categories: {question.categories.map(cat => cat.name).join(', ')}</p>
-                <button onClick={() => setEditingQuestion(question)}>Edit</button>
+                <button onClick={() => setEditingQuestion({...question, categories: question.categories.map(cat => ({ value: cat.id, label: cat.name }))})}>Edit</button>
                 <button onClick={() => handleDeleteQuestion(question.id)}>Delete</button>
               </>
             )}
