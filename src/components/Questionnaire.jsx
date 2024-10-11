@@ -48,14 +48,14 @@ function Questionnaire() {
     }
   };
 
+  const handleSubmit = () => {
+    navigate(`/results/${sessionId}`);
+  };
+
   const handlePrevious = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
-  };
-
-  const handleSubmit = () => {
-    navigate(`/results/${sessionId}`);
   };
 
   if (isLoading) return <div className="loading">Loading questions...</div>;
