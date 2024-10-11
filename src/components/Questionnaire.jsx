@@ -5,13 +5,12 @@ import ShareSession from './ShareSession';
 
 function Questionnaire() {
   const [questions, setQuestions] = useState([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1); // Start at -1 for handle input
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showShareOptions, setShowShareOptions] = useState(false);
   const [userId, setUserId] = useState('');
-  const [userHandle, setUserHandle] = useState('');
   const { sessionId } = useParams();
   const navigate = useNavigate();
 
@@ -24,6 +23,7 @@ function Questionnaire() {
         const fetchedQuestions = await fetchQuestions();
         setQuestions(fetchedQuestions);
       } catch (err) {
+        console.error('Error initializing session:', err);
         setError(`Unable to connect to the server. Please check your internet connection and try again. (Error: ${err.message})`);
       } finally {
         setIsLoading(false);
@@ -38,13 +38,15 @@ function Questionnaire() {
     setAnswers({ ...answers, [currentQuestion.id]: answer });
 
     try {
-      await submitAnswer(sessionId, userId, currentQuestion.id, answer, userHandle);
+      console.log(`Submitting answer: ${answer} for question ${currentQuestion.id}`);
+      await submitAnswer(sessionId, userId, currentQuestion.id, answer);
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       } else {
         setShowShareOptions(true);
       }
     } catch (err) {
+      console.error('Error submitting answer:', err);
       setError(`Failed to submit answer. Please check your internet connection and try again. (Error: ${err.message})`);
     }
   };
@@ -53,35 +55,12 @@ function Questionnaire() {
     navigate(`/results/${sessionId}`);
   };
 
-  const handleStartQuestions = () => {
-    if (userHandle.trim() !== '') {
-      setCurrentQuestionIndex(0);
-    } else {
-      setError('Please enter a handle before starting.');
-    }
-  };
-
   if (isLoading) return <div className="loading">Loading questions...</div>;
   if (error) return <div className="error">{error}</div>;
   if (questions.length === 0) return <div className="error">No questions available. Please try refreshing the page.</div>;
 
   if (showShareOptions) {
     return <ShareSession sessionId={sessionId} onSubmit={handleSubmit} />;
-  }
-
-  if (currentQuestionIndex === -1) {
-    return (
-      <div>
-        <h2>Enter Your Handle</h2>
-        <input
-          type="text"
-          value={userHandle}
-          onChange={(e) => setUserHandle(e.target.value)}
-          placeholder="Enter your handle"
-        />
-        <button onClick={handleStartQuestions}>Start Questions</button>
-      </div>
-    );
   }
 
   const currentQuestion = questions[currentQuestionIndex];
