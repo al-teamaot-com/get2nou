@@ -48,6 +48,12 @@ function Questionnaire() {
     }
   };
 
+  const handlePrevious = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+    }
+  };
+
   const handleSubmit = () => {
     navigate(`/results/${sessionId}`);
   };
@@ -80,6 +86,14 @@ function Questionnaire() {
       <p>
         Question {currentQuestionIndex + 1} of {questions.length}
       </p>
+      <div className="navigation-buttons">
+        <button onClick={handlePrevious} disabled={currentQuestionIndex === 0}>
+          Previous
+        </button>
+        {currentQuestionIndex === questions.length - 1 && (
+          <button onClick={() => setShowShareOptions(true)}>Finish</button>
+        )}
+      </div>
     </div>
   );
 }
