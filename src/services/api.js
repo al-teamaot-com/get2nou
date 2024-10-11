@@ -3,7 +3,6 @@ const API_BASE_URL = '/api';
 const handleResponse = async (response) => {
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('API Error:', response.status, errorText);
     throw new Error(`${response.status}: ${errorText}`);
   }
   return response.json();
@@ -14,13 +13,13 @@ export const fetchQuestions = async () => {
   return handleResponse(response);
 };
 
-export const submitAnswer = async (sessionId, userId, questionId, answer, handle) => {
+export const submitAnswer = async (sessionId, userId, questionId, answer) => {
   const response = await fetch(`${API_BASE_URL}/answers`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ sessionId, userId, questionId, answer, handle }),
+    body: JSON.stringify({ sessionId, userId, questionId, answer }),
   });
   return handleResponse(response);
 };
