@@ -47,7 +47,7 @@ function Results() {
           <div key={questionId} className="result-item">
             <h3>{question.text}</h3>
             {Object.entries(answers).map(([userId, answer]) => (
-              <p key={userId}>{userId}: {answer}</p>
+              <p key={userId}>{answer.userHandle || userId}: {answer.value}</p>
             ))}
           </div>
         );
