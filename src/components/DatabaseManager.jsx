@@ -6,7 +6,7 @@ function DatabaseManager() {
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [newQuestion, setNewQuestion] = useState({ text: '', categories: [] });
+  const [newQuestion, setNewQuestion] = useState({ text: '', category: '' });
   const [editingQuestion, setEditingQuestion] = useState(null);
 
   useEffect(() => {
@@ -34,8 +34,8 @@ function DatabaseManager() {
   const handleCreateQuestion = async (e) => {
     e.preventDefault();
     try {
-      await createQuestion(newQuestion.text, newQuestion.categories);
-      setNewQuestion({ text: '', categories: [] });
+      await createQuestion(newQuestion.text, newQuestion.category);
+      setNewQuestion({ text: '', category: '' });
       loadData();
     } catch (err) {
       setError(`Failed to create question: ${err.message}`);
@@ -45,7 +45,7 @@ function DatabaseManager() {
   const handleUpdateQuestion = async (e) => {
     e.preventDefault();
     try {
-      await updateQuestion(editingQuestion.id, editingQuestion.text, editingQuestion.categories);
+      await updateQuestion(editingQuestion.id, editingQuestion.text, editingQuestion.category);
       setEditingQuestion(null);
       loadData();
     } catch (err) {
@@ -60,11 +60,6 @@ function DatabaseManager() {
     } catch (err) {
       setError(`Failed to delete question: ${err.message}`);
     }
-  };
-
-  const handleCategoryChange = (e, questionState, setQuestionState) => {
-    const selectedCategories = Array.from(e.target.selectedOptions, option => option.value);
-    setQuestionState({ ...questionState, categories: selectedCategories });
   };
 
   if (loading) return <div className="loading">Loading data...</div>;
@@ -84,11 +79,11 @@ function DatabaseManager() {
           required
         />
         <select
-          multiple
-          value={newQuestion.categories}
-          onChange={(e) => handleCategoryChange(e, newQuestion, setNewQuestion)}
+          value={newQuestion.category}
+          onChange={(e) => setNewQuestion({ ...newQuestion, category: e.target.value })}
           required
         >
+          <option value="">Select a category</option>
           {categories.map((category) => (
             <option key={category} value={category}>{category}</option>
           ))}
@@ -107,11 +102,11 @@ function DatabaseManager() {
                 required
               />
               <select
-                multiple
-                value={editingQuestion.categories}
-                onChange={(e) => handleCategoryChange(e, editingQuestion, setEditingQuestion)}
+                value={editingQuestion.category}
+                onChange={(e) => setEditingQuestion({ ...editingQuestion, category: e.target.value })}
                 required
               >
+                <option value="">Select a category</option>
                 {categories.map((category) => (
                   <option key={category} value={category}>{category}</option>
                 ))}
@@ -121,7 +116,7 @@ function DatabaseManager() {
             </form>
           ) : (
             <>
-              <p>{question.text} (Categories: {question.categories.join(', ')})</p>
+              <p>{question.text} (Category: {question.category})</p>
               <button onClick={() => setEditingQuestion(question)}>Edit</button>
               <button onClick={() => handleDeleteQuestion(question.id)}>Delete</button>
             </>
