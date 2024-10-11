@@ -42,12 +42,7 @@ app.post('/api/sessions', async (req, res) => {
 app.get('/api/questions', async (req, res) => {
   try {
     const client = await pool.connect();
-    const result = await client.query(`
-      SELECT q.id, q.text, ARRAY_AGG(qc.category) AS categories
-      FROM questions q
-      LEFT JOIN question_categories qc ON q.id = qc.question_id
-      GROUP BY q.id, q.text
-    `);
+    const result = await client.query('SELECT * FROM questions');
     client.release();
     res.json(result.rows);
   } catch (err) {
@@ -60,7 +55,10 @@ app.post('/api/answers', async (req, res) => {
   const { sessionId, userId, questionId, answer } = req.body;
   try {
     const client = await pool.connect();
-    await client.query('INSERT INTO answers (session_id, user_id, question_id, answer) VALUES ($1, $2, $3, $4)', [sessionId, userId, questionId, answer]);
+    await client.query(
+      'INSERT INTO answers (session_id, user_id, question_id, answer) VALUES ($1, $2, $3, $4)',
+      [sessionId, userId, questionId, answer]
+    );
     client.release();
     res.json({ success: true });
   } catch (err) {
@@ -97,7 +95,7 @@ app.get('/api/results/:sessionId', async (req, res) => {
 app.get('/api/categories', async (req, res) => {
   try {
     const client = await pool.connect();
-    const result = await client.query('SELECT DISTINCT category FROM question_categories');
+    const result = await client.query('SELECT DISTINCT category FROM questions');
     client.release();
     const categories = result.rows.map(row => row.category);
     res.json(categories);
@@ -108,24 +106,15 @@ app.get('/api/categories', async (req, res) => {
 });
 
 app.post('/api/questions', async (req, res) => {
-  const { text, categories } = req.body;
+  const { text, category } = req.body;
   try {
     const client = await pool.connect();
-    await client.query('BEGIN');
-    const questionResult = await client.query(
-      'INSERT INTO questions (text) VALUES ($1) RETURNING id',
-      [text]
+    const result = await client.query(
+      'INSERT INTO questions (text, category) VALUES ($1, $2) RETURNING *',
+      [text, category]
     );
-    const questionId = questionResult.rows[0].id;
-    for (const category of categories) {
-      await client.query(
-        'INSERT INTO question_categories (question_id, category) VALUES ($1, $2)',
-        [questionId, category]
-      );
-    }
-    await client.query('COMMIT');
     client.release();
-    res.json({ id: questionId, text, categories });
+    res.json(result.rows[0]);
   } catch (err) {
     console.error('Error creating question:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -134,21 +123,15 @@ app.post('/api/questions', async (req, res) => {
 
 app.put('/api/questions/:id', async (req, res) => {
   const { id } = req.params;
-  const { text, categories } = req.body;
+  const { text, category } = req.body;
   try {
     const client = await pool.connect();
-    await client.query('BEGIN');
-    await client.query('UPDATE questions SET text = $1 WHERE id = $2', [text, id]);
-    await client.query('DELETE FROM question_categories WHERE question_id = $1', [id]);
-    for (const category of categories) {
-      await client.query(
-        'INSERT INTO question_categories (question_id, category) VALUES ($1, $2)',
-        [id, category]
-      );
-    }
-    await client.query('COMMIT');
+    const result = await client.query(
+      'UPDATE questions SET text = $1, category = $2 WHERE id = $3 RETURNING *',
+      [text, category, id]
+    );
     client.release();
-    res.json({ id, text, categories });
+    res.json(result.rows[0]);
   } catch (err) {
     console.error('Error updating question:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -161,7 +144,6 @@ app.delete('/api/questions/:id', async (req, res) => {
     const client = await pool.connect();
     await client.query('BEGIN');
     await client.query('DELETE FROM answers WHERE question_id = $1', [id]);
-    await client.query('DELETE FROM question_categories WHERE question_id = $1', [id]);
     await client.query('DELETE FROM questions WHERE id = $1', [id]);
     await client.query('COMMIT');
     client.release();
