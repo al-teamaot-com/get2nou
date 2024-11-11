@@ -8,6 +8,7 @@ import { logger } from './src/config/logger.js';
 import questionsRouter from './src/routes/api/questions.js';
 import sessionsRouter from './src/routes/api/sessions.js';
 import answersRouter from './src/routes/api/answers.js';
+import categoriesRouter from './src/routes/api/categories.js';
 
 dotenv.config();
 
@@ -46,6 +47,7 @@ app.use(express.static(join(__dirname, 'dist')));
 app.use('/api/questions', questionsRouter);
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/answers', answersRouter);
+app.use('/api/categories', categoriesRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
