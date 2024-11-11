@@ -5,25 +5,9 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { body, validationResult } from 'express-validator';
-import winston from 'winston';
+import cors from 'cors';
 
 dotenv.config();
-
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.json(),
-  transports: [
-    new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'combined.log' })
-  ]
-});
-
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.simple()
-  }));
-}
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -31,126 +15,154 @@ const port = process.env.PORT || 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  },
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+// Security middleware with proper CSP for React
+app.use(helmet({
+  contentSecurityPolicy: false // Disabled for development, configure properly for production
+}));
 
-// Security middleware
-app.use(helmet());
+// Configure CORS
+app.use(cors());
+
+// Rate limiting
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100
 }));
 
+// Database connection with connection pooling
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? {
+    rejectUnauthorized: false
+  } : false,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+
+// Middleware
 app.use(express.json());
 app.use(express.static(join(__dirname, 'dist')));
 
-// Error handling middleware
-const errorHandler = (err, req, res, next) => {
-  logger.error(err.stack);
-  res.status(500).json({ error: 'Internal server error' });
-};
-
-// Validation middleware
-const validateCategory = [
-  body('name').trim().isLength({ min: 1 }).escape(),
-];
-
-// Categories API with validation and error handling
-app.get('/api/categories', async (req, res) => {
+// API Routes
+app.get('/api/questions', async (req, res) => {
+  const client = await pool.connect();
   try {
-    const client = await pool.connect();
-    const result = await client.query('SELECT * FROM categories');
-    client.release();
-    res.json(result.rows);
+    const result = await client.query('SELECT * FROM questions');
+    const questions = result.rows;
+    
+    for (let question of questions) {
+      const categoryResult = await client.query(
+        `SELECT c.* FROM categories c 
+         JOIN question_categories qc ON c.id = qc.category_id 
+         WHERE qc.question_id = $1`,
+        [question.id]
+      );
+      question.categories = categoryResult.rows;
+    }
+    
+    res.json(questions);
   } catch (err) {
-    logger.error('Error fetching categories:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error fetching questions:', err);
+    res.status(500).json({ error: 'Database error', message: err.message });
+  } finally {
+    client.release();
   }
 });
 
-app.post('/api/categories', validateCategory, async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+app.post('/api/sessions', async (req, res) => {
+  const { sessionId, userId } = req.body;
+  if (!sessionId || !userId) {
+    return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  const { name } = req.body;
+  const client = await pool.connect();
   try {
-    const client = await pool.connect();
+    await client.query('BEGIN');
+    
     const result = await client.query(
-      'INSERT INTO categories (name) VALUES ($1) RETURNING *',
-      [name]
+      `INSERT INTO sessions (id, users) 
+       VALUES ($1, ARRAY[$2]) 
+       ON CONFLICT (id) DO UPDATE 
+       SET users = array_append(sessions.users, $2) 
+       WHERE NOT $2 = ANY(sessions.users)
+       RETURNING *`,
+      [sessionId, userId]
     );
-    client.release();
+    
+    await client.query('COMMIT');
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    logger.error('Error creating category:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    await client.query('ROLLBACK');
+    console.error('Error managing session:', err);
+    res.status(500).json({ error: 'Session management failed', message: err.message });
+  } finally {
+    client.release();
   }
 });
 
-app.put('/api/categories/:id', validateCategory, async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+app.post('/api/answers', async (req, res) => {
+  const { sessionId, userId, questionId, answer } = req.body;
+  if (!sessionId || !userId || !questionId || answer === undefined) {
+    return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  const { id } = req.params;
-  const { name } = req.body;
+  const client = await pool.connect();
   try {
-    const client = await pool.connect();
+    await client.query('BEGIN');
+    
     const result = await client.query(
-      'UPDATE categories SET name = $1 WHERE id = $2 RETURNING *',
-      [name, id]
+      `INSERT INTO answers (session_id, user_id, question_id, answer) 
+       VALUES ($1, $2, $3, $4) 
+       ON CONFLICT (session_id, user_id, question_id) 
+       DO UPDATE SET answer = $4
+       RETURNING *`,
+      [sessionId, userId, questionId, answer]
     );
-    client.release();
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Category not found' });
-    } else {
-      res.json(result.rows[0]);
-    }
+    
+    await client.query('COMMIT');
+    res.status(201).json(result.rows[0]);
   } catch (err) {
-    logger.error('Error updating category:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    await client.query('ROLLBACK');
+    console.error('Error submitting answer:', err);
+    res.status(500).json({ error: 'Answer submission failed', message: err.message });
+  } finally {
+    client.release();
   }
 });
 
-app.delete('/api/categories/:id', async (req, res) => {
-  const { id } = req.params;
+app.get('/api/results/:sessionId', async (req, res) => {
+  const { sessionId } = req.params;
+  const client = await pool.connect();
   try {
-    const client = await pool.connect();
-    await client.query('DELETE FROM categories WHERE id = $1', [id]);
-    client.release();
-    res.status(204).send();
+    const result = await client.query(
+      'SELECT * FROM answers WHERE session_id = $1',
+      [sessionId]
+    );
+    res.json(result.rows);
   } catch (err) {
-    logger.error('Error deleting category:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error fetching results:', err);
+    res.status(500).json({ error: 'Failed to fetch results', message: err.message });
+  } finally {
+    client.release();
   }
 });
 
-// Serve React app
+// Serve React app for all other routes
 app.get('*', (req, res) => {
   res.sendFile(join(__dirname, 'dist', 'index.html'));
 });
 
-app.use(errorHandler);
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM signal received: closing HTTP server');
-  pool.end(() => {
-    logger.info('Database pool has ended');
-    process.exit(0);
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    error: 'Internal server error',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
   });
 });
 
+// Start server
 app.listen(port, () => {
-  logger.info(`Server running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });
