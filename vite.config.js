@@ -18,7 +18,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom', 'react-error-boundary'],
+          vendor: ['react', 'react-dom', 'react-router-dom', 'react-error-boundary', 'react-query'],
           ui: ['react-select', 'react-transition-group']
         }
       }
