@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import { logger } from './src/config/logger.js';
 import questionsRouter from './src/routes/api/questions.js';
 import sessionsRouter from './src/routes/api/sessions.js';
+import answersRouter from './src/routes/api/answers.js';
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ app.use(express.static(join(__dirname, 'dist')));
 // API Routes
 app.use('/api/questions', questionsRouter);
 app.use('/api/sessions', sessionsRouter);
+app.use('/api/answers', answersRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
