@@ -1,11 +1,11 @@
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://harmonious-strudel-2f8101.netlify.app/api'
+  ? 'https://your-heroku-app-name.herokuapp.com/api'
   : '/api';
 
 const handleResponse = async (response) => {
   if (!response.ok) {
-    const errorData = await response.json().catch(() => response.text());
-    throw new Error(typeof errorData === 'string' ? errorData : errorData.message || 'Server error');
+    const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+    throw new Error(errorData.message || 'Server error');
   }
   return response.json();
 };
@@ -39,35 +39,6 @@ export const submitAnswer = async (sessionId, userId, questionId, answer) => {
 
 export const fetchResults = async (sessionId) => {
   const response = await fetch(`${API_BASE_URL}/results/${sessionId}`);
-  return handleResponse(response);
-};
-
-export const createQuestion = async (text, categories) => {
-  const response = await fetch(`${API_BASE_URL}/questions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ text, categories }),
-  });
-  return handleResponse(response);
-};
-
-export const updateQuestion = async (id, text, categories) => {
-  const response = await fetch(`${API_BASE_URL}/questions/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ text, categories }),
-  });
-  return handleResponse(response);
-};
-
-export const deleteQuestion = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/questions/${id}`, {
-    method: 'DELETE',
-  });
   return handleResponse(response);
 };
 
