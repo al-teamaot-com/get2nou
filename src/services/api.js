@@ -1,15 +1,28 @@
-const API_BASE_URL = '/api';
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://your-heroku-app.herokuapp.com/api'
+  : '/api';
 
 const handleResponse = async (response) => {
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`${response.status}: ${errorText}`);
+    const errorData = await response.json().catch(() => response.text());
+    throw new Error(typeof errorData === 'string' ? errorData : errorData.message || 'Server error');
   }
   return response.json();
 };
 
 export const fetchQuestions = async () => {
   const response = await fetch(`${API_BASE_URL}/questions`);
+  return handleResponse(response);
+};
+
+export const createOrJoinSession = async (sessionId, userId) => {
+  const response = await fetch(`${API_BASE_URL}/sessions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ sessionId, userId }),
+  });
   return handleResponse(response);
 };
 
@@ -26,17 +39,6 @@ export const submitAnswer = async (sessionId, userId, questionId, answer) => {
 
 export const fetchResults = async (sessionId) => {
   const response = await fetch(`${API_BASE_URL}/results/${sessionId}`);
-  return handleResponse(response);
-};
-
-export const createOrJoinSession = async (sessionId, userId) => {
-  const response = await fetch(`${API_BASE_URL}/sessions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ sessionId, userId }),
-  });
   return handleResponse(response);
 };
 
