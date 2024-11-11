@@ -1,5 +1,5 @@
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-heroku-app.herokuapp.com/api'
+  ? 'https://harmonious-strudel-2f8101.netlify.app/api'
   : '/api';
 
 const handleResponse = async (response) => {
