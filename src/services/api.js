@@ -42,6 +42,17 @@ export const deleteQuestion = async (id) => {
   return handleResponse(response);
 };
 
+export const submitAnswer = async (sessionId, userId, questionId, answer) => {
+  const response = await fetch(`${API_BASE_URL}/answers`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ sessionId, userId, questionId, answer }),
+  });
+  return handleResponse(response);
+};
+
 export const createOrJoinSession = async (sessionId, userId) => {
   const response = await fetch(`${API_BASE_URL}/sessions`, {
     method: 'POST',
@@ -50,5 +61,15 @@ export const createOrJoinSession = async (sessionId, userId) => {
     },
     body: JSON.stringify({ sessionId, userId }),
   });
+  return handleResponse(response);
+};
+
+export const fetchResults = async (sessionId) => {
+  const response = await fetch(`${API_BASE_URL}/results/${sessionId}`);
+  return handleResponse(response);
+};
+
+export const fetchCategories = async () => {
+  const response = await fetch(`${API_BASE_URL}/categories`);
   return handleResponse(response);
 };
