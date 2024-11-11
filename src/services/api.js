@@ -1,11 +1,11 @@
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-heroku-app-name.herokuapp.com/api'
+const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://get2nou-bdc17edccd94.herokuapp.com/api'
   : '/api';
 
 const handleResponse = async (response) => {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ message: 'Network error' }));
-    throw new Error(errorData.message || 'Server error');
+    throw new Error(errorData.message || `Server error: ${response.status}`);
   }
   return response.json();
 };
@@ -26,24 +26,6 @@ export const createQuestion = async (text, categories) => {
   return handleResponse(response);
 };
 
-export const updateQuestion = async (id, text, categories) => {
-  const response = await fetch(`${API_BASE_URL}/questions/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ text, categories }),
-  });
-  return handleResponse(response);
-};
-
-export const deleteQuestion = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/questions/${id}`, {
-    method: 'DELETE',
-  });
-  return handleResponse(response);
-};
-
 export const createOrJoinSession = async (sessionId, userId) => {
   const response = await fetch(`${API_BASE_URL}/sessions`, {
     method: 'POST',
@@ -51,56 +33,6 @@ export const createOrJoinSession = async (sessionId, userId) => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ sessionId, userId }),
-  });
-  return handleResponse(response);
-};
-
-export const submitAnswer = async (sessionId, userId, questionId, answer) => {
-  const response = await fetch(`${API_BASE_URL}/answers`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ sessionId, userId, questionId, answer }),
-  });
-  return handleResponse(response);
-};
-
-export const fetchResults = async (sessionId) => {
-  const response = await fetch(`${API_BASE_URL}/results/${sessionId}`);
-  return handleResponse(response);
-};
-
-export const fetchCategories = async () => {
-  const response = await fetch(`${API_BASE_URL}/categories`);
-  return handleResponse(response);
-};
-
-export const createCategory = async (name) => {
-  const response = await fetch(`${API_BASE_URL}/categories`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ name }),
-  });
-  return handleResponse(response);
-};
-
-export const updateCategory = async (id, name) => {
-  const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ name }),
-  });
-  return handleResponse(response);
-};
-
-export const deleteCategory = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
-    method: 'DELETE',
   });
   return handleResponse(response);
 };
